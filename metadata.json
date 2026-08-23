@@ -1,0 +1,8 @@
+{
+  "name": "Album Render v.2",
+  "description": "Create full album videos automatically from audio files, images, and text with a modern, cinematic video editor UI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
