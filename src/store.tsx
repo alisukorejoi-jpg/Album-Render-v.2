@@ -12,6 +12,7 @@ interface AppState {
 type AppAction =
   | { type: 'SET_PROJECTS'; payload: Project[] }
   | { type: 'CREATE_PROJECT'; payload: Project }
+  | { type: 'DELETE_PROJECT'; payload: string }
   | { type: 'OPEN_PROJECT'; payload: string }
   | { type: 'SAVE_PROJECT' }
   | { type: 'UPDATE_PROJECT'; payload: Partial<Project> }
@@ -37,6 +38,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, projects: action.payload };
     case 'CREATE_PROJECT':
       return { ...state, currentProject: action.payload, projects: [...state.projects, action.payload] };
+        case 'DELETE_PROJECT':
+      return { 
+        ...state, 
+        projects: state.projects.filter(p => p.id !== action.payload),
+        currentProject: state.currentProject?.id === action.payload ? null : state.currentProject
+      };
     case 'OPEN_PROJECT':
       const proj = state.projects.find(p => p.id === action.payload) || null;
       return { ...state, currentProject: proj };

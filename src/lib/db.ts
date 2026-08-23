@@ -1,4 +1,4 @@
-import { collection, doc, setDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs, query, where, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { Project } from '../types';
 
@@ -45,5 +45,15 @@ export const loadProjectsFromFirestore = async (userId: string): Promise<Project
   } catch (err) {
     console.error('Failed to load projects:', err);
     return [];
+  }
+};
+
+export const deleteProjectFromFirestore = async (projectId: string) => {
+  try {
+    const projectRef = doc(db, 'projects', projectId);
+    await deleteDoc(projectRef);
+  } catch (error) {
+    console.error("Error deleting project from Firestore: ", error);
+    throw error;
   }
 };

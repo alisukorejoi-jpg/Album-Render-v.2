@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAppContext } from '../store';
-import { Plus, FolderOpen, Settings, LayoutTemplate, Film, MonitorPlay, LogOut, Loader2, Users } from 'lucide-react';
+import { Plus, FolderOpen, Settings, LayoutTemplate, Film, MonitorPlay, LogOut, Loader2, Users, Trash2 } from 'lucide-react';
 import { Project, GlobalSettings } from '../types';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
 import { AuthModal } from './AuthModal';
-import { loadProjectsFromFirestore, saveProjectToFirestore } from '../lib/db';
+import { loadProjectsFromFirestore, saveProjectToFirestore, deleteProjectFromFirestore } from '../lib/db';
 import { AdminDashboard } from './AdminDashboard';
 import { SettingsView } from './SettingsView';
 import { UserSettings } from '../types';
@@ -89,6 +89,22 @@ export function Dashboard() {
     if (userSettings.defaultArtistName) setArtist(userSettings.defaultArtistName);
     if (userSettings.defaultFormat) setResolution(userSettings.defaultFormat);
     setShowCreate(true);
+  };
+
+  
+  const handleDeleteProject = async (e: React.MouseEvent, projectId: string, projectTitle: string) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to delete "${projectTitle}"? This cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      await deleteProjectFromFirestore(projectId);
+      dispatch({ type: 'DELETE_PROJECT', payload: projectId });
+    } catch (error) {
+      console.error("Failed to delete project", error);
+      alert("Failed to delete project. Please try again.");
+    }
   };
 
   const handleCreate = async () => {
@@ -336,9 +352,18 @@ export function Dashboard() {
                     </div>
                     <h3 className="text-lg font-bold text-white mb-1">{project.title}</h3>
                     <p className="text-neutral-400 text-xs mb-3">{project.artist}</p>
-                    <div className="flex gap-4 text-[10px] font-bold text-neutral-500 uppercase">
-                      <span>{project.tracks.length} Tracks</span>
-                      <span>{project.resolution}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-4 text-[10px] font-bold text-neutral-500 uppercase">
+                        <span>{project.tracks.length} Tracks</span>
+                        <span>{project.resolution}</span>
+                      </div>
+                      <button 
+                        onClick={(e) => handleDeleteProject(e, project.id, project.title)}
+                        className="p-1.5 text-neutral-600 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                        title="Delete project"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 ))}
