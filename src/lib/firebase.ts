@@ -3,12 +3,12 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDzc26l4X8Q5KSQCuhJBGsUM-ZaCtPTsis",
-  authDomain: "fine-discovery-207pf.firebaseapp.com",
-  projectId: "fine-discovery-207pf",
-  storageBucket: "fine-discovery-207pf.firebasestorage.app",
-  messagingSenderId: "319489128703",
-  appId: "1:319489128703:web:05c29729a5f565a06eb4ca"
+  apiKey: "AIzaSyCRQ6ydX5kgkfDlqJ3diDlCr_eORZNzfpY",
+  authDomain: "gen-lang-client-0113721820.firebaseapp.com",
+  projectId: "gen-lang-client-0113721820",
+  storageBucket: "gen-lang-client-0113721820.firebasestorage.app",
+  messagingSenderId: "88860378544",
+  appId: "1:88860378544:web:107b2e71aadd59d51d0275"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -16,4 +16,4 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-export const db = getFirestore(app, "ai-studio-albumrender-3f384196-7978-4d70-86c2-f82d21417efe");
+export const db = getFirestore(app, "ai-studio-albumrenderv2-2123d097-4d23-43b8-ad18-907b7c1045e1");
