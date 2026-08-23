@@ -25,6 +25,7 @@ export function Inspector() {
           >
             <option value="minimal">Minimal Cinematic</option>
             <option value="cover_flow_3d">3D Cover Flow</option>
+            <option value="cover_flow_3d_light">3D Cover Flow (Light)</option>
             <option value="now_playing">Now Playing</option>
             <option value="playlist">Full Album Playlist</option>
             <option value="centered_bold">Centered Bold Title</option>

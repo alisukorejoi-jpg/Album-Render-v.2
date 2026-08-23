@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useAppContext } from '../store';
-import { Plus, FolderOpen, Settings, LayoutTemplate, Film, MonitorPlay, LogOut, Loader2 } from 'lucide-react';
+import { Plus, FolderOpen, Settings, LayoutTemplate, Film, MonitorPlay, LogOut, Loader2, Users } from 'lucide-react';
 import { Project, GlobalSettings } from '../types';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
 import { AuthModal } from './AuthModal';
 import { loadProjectsFromFirestore, saveProjectToFirestore } from '../lib/db';
+import { AdminDashboard } from './AdminDashboard';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 export function Dashboard() {
   const { state, dispatch } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'projects' | 'templates' | 'settings'>('projects');
+  const [activeTab, setActiveTab] = useState<'projects' | 'templates' | 'settings' | 'admin'>('projects');
   const [showCreate, setShowCreate] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [title, setTitle] = useState('');
@@ -25,6 +28,18 @@ export function Dashboard() {
     async function fetchProjects() {
       if (user) {
         setIsSyncing(true);
+        // Sync user to firestore for admin tracking
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          await setDoc(userRef, {
+            email: user.email,
+            displayName: user.displayName || '',
+            lastLogin: new Date().toISOString()
+          }, { merge: true });
+        } catch (e) {
+          console.error('Failed to sync user', e);
+        }
+
         const userProjects = await loadProjectsFromFirestore(user.uid);
         dispatch({ type: 'SET_PROJECTS', payload: userProjects });
         setIsSyncing(false);
@@ -124,6 +139,14 @@ export function Dashboard() {
           >
             <Settings className="w-4 h-4" /> Settings
           </button>
+          {user?.email === 'alisukorejoi@gmail.com' && (
+            <button 
+              onClick={() => setActiveTab('admin')}
+              className={`flex items-center justify-center md:justify-start gap-2 md:gap-3 px-3 py-2 rounded-lg transition-colors w-full whitespace-nowrap md:whitespace-normal ${activeTab === 'admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white border border-transparent'}`}
+            >
+              <Users className="w-4 h-4" /> Admin
+            </button>
+          )}
         </nav>
 
         {/* User Profile Footer */}
@@ -319,6 +342,11 @@ export function Dashboard() {
                 ))}
               </div>
             </>
+          )}
+
+          {/* Admin View */}
+          {activeTab === 'admin' && user?.email === 'alisukorejoi@gmail.com' && (
+            <AdminDashboard />
           )}
 
           {/* Settings View */}

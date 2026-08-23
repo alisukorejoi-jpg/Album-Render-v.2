@@ -1673,8 +1673,8 @@ export function VideoPreview() {
              // We only need the first 32 bins for our simple visualizer
              for (let i = 0; i < 32; i++) {
                   freqData[i] = fullData[i];
-             }
-        } else if (state.isPlaying) {
+             } 
+ } else if (state.isPlaying) {
              for (let i = 0; i < 32; i++) {
                   freqData[i] = Math.random() * 150;
              }
@@ -1945,8 +1945,360 @@ export function VideoPreview() {
         ctx.fillText('🔀', barX + barW - 240 * scaleF, ctrlCY);
         ctx.fillText('𝄏', barX + barW - 160 * scaleF, ctrlCY); // List icon roughly
         ctx.fillText('🔊', barX + barW - 80 * scaleF, ctrlCY);
+      } else if (template === 'cover_flow_3d_light') {
+        const cw = targetWidth;
+        const ch = targetHeight;
+        const scaleF = targetWidth / 1920;
+        
+        // 1. Background (Warm Spotlight)
+        const bgGrad = ctx.createRadialGradient(cw / 2, ch / 2 + 100 * scaleF, 100 * scaleF, cw / 2, ch / 2, 1200 * scaleF);
+        bgGrad.addColorStop(0, '#f9f6f0');
+        bgGrad.addColorStop(0.5, '#f0eade');
+        bgGrad.addColorStop(1, '#e3dbcf');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, cw, ch);
+
+        // 2. Podium
+        const podW = 800 * scaleF;
+        const podH = 120 * scaleF;
+        const podX = cw / 2;
+        const podY = ch / 2 + 240 * scaleF; // Center of podium
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 40 * scaleF;
+        ctx.shadowOffsetY = 20 * scaleF;
+        
+        // Bottom ring (shadow/base)
+        ctx.beginPath();
+        ctx.ellipse(podX, podY + 20 * scaleF, podW / 2 + 40 * scaleF, podH / 2 + 10 * scaleF, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fill();
+
+        // Main podium cylinder
+        ctx.beginPath();
+        ctx.ellipse(podX, podY + 10 * scaleF, podW / 2, podH / 2, 0, 0, Math.PI * 2);
+        const podGrad = ctx.createLinearGradient(podX - podW/2, 0, podX + podW/2, 0);
+        podGrad.addColorStop(0, '#e3dacd');
+        podGrad.addColorStop(0.2, '#f6f1ea');
+        podGrad.addColorStop(0.5, '#ffffff');
+        podGrad.addColorStop(0.8, '#f6f1ea');
+        podGrad.addColorStop(1, '#e3dacd');
+        ctx.fillStyle = podGrad;
+        ctx.fill();
+        ctx.lineWidth = 4 * scaleF;
+        ctx.strokeStyle = '#d5ccbf';
+        ctx.stroke();
+
+        // Podium top
+        ctx.beginPath();
+        ctx.ellipse(podX, podY, podW / 2, podH / 2, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#f6f2eb';
+        ctx.fill();
+        
+        // Rotate outer dash
+        ctx.save();
+        ctx.lineWidth = 3 * scaleF;
+        ctx.strokeStyle = '#d5ccbf';
+        ctx.setLineDash([30 * scaleF, 50 * scaleF]);
+        ctx.lineDashOffset = -(performance.now() / 25) * scaleF;
+        ctx.shadowColor = 'rgba(255,255,255,0)'; // no neon glow in light mode
+        ctx.shadowBlur = 15 * scaleF;
+        ctx.stroke();
+        ctx.restore();
+
+        // Inner solid ring for structure
+        ctx.beginPath();
+        ctx.ellipse(podX, podY, podW / 2 - 6 * scaleF, podH / 2 - 6 * scaleF, 0, 0, Math.PI * 2);
+        ctx.lineWidth = 1 * scaleF;
+        ctx.strokeStyle = 'rgba(224, 184, 133, 0.3)';
+        ctx.stroke();
+        
+        ctx.restore();
+
+        // 3. Audio Frequency Data
+        let freqData = new Uint8Array(32);
+        const analyser = (window as any).__audioAnalyser;
+        if (analyser && state.isPlaying) {
+             const fullData = new Uint8Array(analyser.frequencyBinCount);
+             analyser.getByteFrequencyData(fullData);
+             // We only need the first 32 bins for our simple visualizer
+             for (let i = 0; i < 32; i++) {
+                  freqData[i] = fullData[i];
+             } 
+ } else if (state.isPlaying) {
+             for (let i = 0; i < 32; i++) {
+                  freqData[i] = Math.random() * 150;
+             }
+        }
+
+        // 4. Draw Cards (Cover Flow)
+        const drawCard = (x: number, y: number, w: number, h: number, isCenter: boolean, alpha: number, trackForCard?: Track) => {
+            ctx.save();
+            ctx.shadowColor = isCenter ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = isCenter ? 50 * scaleF : 20 * scaleF;
+            ctx.shadowOffsetY = isCenter ? 20 * scaleF : 10 * scaleF;
+            ctx.globalAlpha = alpha;
+
+            // Draw rounded rect mask
+            roundRect(ctx, x, y, w, h, 24 * scaleF);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+
+            // Glow border for center
+            if (isCenter) {
+                ctx.lineWidth = 4 * scaleF;
+                ctx.strokeStyle = 'rgba(224, 184, 133, 0.8)';
+                ctx.stroke();
+            } else {
+                ctx.lineWidth = 2 * scaleF;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.stroke();
+            }
+
+            ctx.clip(); 
+
+            // Draw image
+            const cardImg = (trackForCard && trackForCard.id && trackImgCacheRef.current[trackForCard.id]) || bgImgRef.current;
+            if (cardImg) {
+                const imgRatio = cardImg.width / cardImg.height;
+                const targetRatio = w / h;
+                let sx = 0, sy = 0, sWidth = cardImg.width, sHeight = cardImg.height;
+                if (imgRatio > targetRatio) {
+                    sWidth = cardImg.height * targetRatio;
+                    sx = (cardImg.width - sWidth) / 2;
+                } else {
+                    sHeight = cardImg.width / targetRatio;
+                    sy = (cardImg.height - sHeight) / 2;
+                }
+                ctx.drawImage(cardImg, sx, sy, sWidth, sHeight, x, y, w, h);
+            }
+
+            // Dark overlay for text readability at bottom
+            const grad = ctx.createLinearGradient(0, y + h - 300 * scaleF, 0, y + h);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.9)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(x, y, w, h);
+            
+            // Side card extra darkening
+            if (!isCenter) {
+                ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                ctx.fillRect(x, y, w, h);
+            }
+
+            // Draw Text
+            const cx = x + w / 2;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            
+            const displayTitle = trackForCard?.title || 'Untitled Track';
+            const displayArtist = trackForCard?.artist || project.artist || 'Unknown Artist';
+
+            if (isCenter) {
+                ctx.fillStyle = '#3a2d27';
+                ctx.font = `bold ${48 * scaleF}px "${project.globalSettings.titleFont || "Plus Jakarta Sans"}"`;
+                ctx.fillText(displayTitle, cx, y + h - 100 * scaleF);
+                
+                ctx.fillStyle = 'rgba(224, 184, 133, 0.9)'; // Gold-ish
+                ctx.font = `500 ${28 * scaleF}px "${project.globalSettings.artistFont || "Plus Jakarta Sans"}"`;
+                ctx.fillText(displayArtist, cx, y + h - 60 * scaleF);
+
+                // Audio Waveform Graphic
+                const waveY = y + h - 30 * scaleF;
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                for(let i=0; i<24; i++) {
+                   const intensity = freqData[i] / 255;
+                   const barH = 5 * scaleF + (intensity * 25 * scaleF);
+                   ctx.fillRect(cx - 140 * scaleF + i * 12 * scaleF, waveY - barH/2, 4 * scaleF, barH);
+                }
+            } else {
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.font = `bold ${30 * scaleF}px "${project.globalSettings.titleFont || "Plus Jakarta Sans"}"`;
+                ctx.fillText(displayTitle, cx, y + h - 70 * scaleF);
+                
+                ctx.fillStyle = 'rgba(224, 184, 133, 0.7)';
+                ctx.font = `500 ${18 * scaleF}px "${project.globalSettings.artistFont || "Plus Jakarta Sans"}"`;
+                ctx.fillText(displayArtist, cx, y + h - 40 * scaleF);
+                
+                const waveY = y + h - 20 * scaleF;
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                for(let i=0; i<16; i++) {
+                   const intensity = freqData[i] / 255;
+                   const barH = 3 * scaleF + (intensity * 12 * scaleF);
+                   ctx.fillRect(cx - 60 * scaleF + i * 8 * scaleF, waveY - barH/2, 2 * scaleF, barH);
+                }
+            }
+            
+            ctx.restore();
+        };
+
+        const cx = cw / 2;
+        const cy = ch / 2 - 100 * scaleF;
+        
+        // Define card positions based on index relative to center (0)
+        // x, y, width, height, alpha
+        const flowCards = [
+          { i: -3, x: cx - 780 * scaleF, y: cy + 40 * scaleF, w: 200 * scaleF, h: 440 * scaleF, alpha: 0.0 },
+          { i: -2, x: cx - 640 * scaleF, y: cy + 30 * scaleF, w: 260 * scaleF, h: 500 * scaleF, alpha: 0.7 },
+          { i: -1, x: cx - 380 * scaleF, y: cy + 20 * scaleF, w: 320 * scaleF, h: 580 * scaleF, alpha: 1.0 },
+          { i: 0,  x: cx,                y: cy,               w: 500 * scaleF, h: 700 * scaleF, alpha: 1.0 },
+          { i: 1,  x: cx + 380 * scaleF, y: cy + 20 * scaleF, w: 320 * scaleF, h: 580 * scaleF, alpha: 1.0 },
+          { i: 2,  x: cx + 640 * scaleF, y: cy + 30 * scaleF, w: 260 * scaleF, h: 500 * scaleF, alpha: 0.7 },
+          { i: 3,  x: cx + 780 * scaleF, y: cy + 40 * scaleF, w: 200 * scaleF, h: 440 * scaleF, alpha: 0.0 },
+        ];
+
+        const getFlowLerped = (v: number) => {
+          v = Math.max(-3, Math.min(3, v));
+          const lower = Math.floor(v);
+          const upper = Math.ceil(v);
+          const t = v - lower;
+          const c1 = flowCards.find(c => c.i === lower)!;
+          const c2 = flowCards.find(c => c.i === upper)!;
+          return {
+            x: c1.x + (c2.x - c1.x) * t,
+            y: c1.y + (c2.y - c1.y) * t,
+            w: c1.w + (c2.w - c1.w) * t,
+            h: c1.h + (c2.h - c1.h) * t,
+            alpha: c1.alpha + (c2.alpha - c1.alpha) * t
+          };
+        };
+
+        const offset = currentOffsetRef.current;
+        const target = targetOffsetRef.current;
+        
+        const cardsToDraw = [];
+        for (let c = Math.floor(offset) - 3; c <= Math.ceil(offset) + 3; c++) {
+           const v = c - offset;
+           if (v >= -3 && v <= 3) {
+             cardsToDraw.push({ c, v, absV: Math.abs(v) });
+           }
+        }
+        
+        // Sort back to front (largest absolute distance first)
+        cardsToDraw.sort((a, b) => b.absV - a.absV);
+
+        for (const card of cardsToDraw) {
+            const props = getFlowLerped(card.v);
+            const isCenter = (card.c === target);
+            const trackForCard = project.tracks[card.c];
+            const drawX = props.x - props.w / 2;
+            const drawY = props.y - props.h / 2;
+            drawCard(drawX, drawY, props.w, props.h, isCenter, props.alpha, trackForCard);
+        }
+
+        // 4. Bottom Glass Player Bar
+        const barW = 1200 * scaleF;
+        const barH = 120 * scaleF;
+        const barX = cw / 2 - barW / 2;
+        const barY = ch - 160 * scaleF;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 20 * scaleF;
+        ctx.shadowOffsetY = 10 * scaleF;
+        
+        ctx.fillStyle = 'rgba(30, 20, 15, 0.6)';
+        roundRect(ctx, barX, barY, barW, barH, 60 * scaleF);
+        ctx.fill();
+        
+        ctx.lineWidth = 2 * scaleF;
+        ctx.strokeStyle = 'rgba(224, 184, 133, 0.4)';
+        ctx.stroke();
+        ctx.restore();
+
+        // Left side controls
+        ctx.fillStyle = '#3a2d27';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `${30 * scaleF}px Arial`;
+        const ctrlCY = barY + barH / 2;
+        ctx.fillText('⏮', barX + 100 * scaleF, ctrlCY);
+        ctx.fillText('⏭', barX + 260 * scaleF, ctrlCY);
+        
+        // Play button
+        ctx.beginPath();
+        ctx.arc(barX + 180 * scaleF, ctrlCY, 36 * scaleF, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fill();
+        ctx.lineWidth = 1 * scaleF;
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.stroke();
+        ctx.fillStyle = '#3a2d27';
+        if (state.isPlaying) {
+            ctx.fillRect(barX + 180 * scaleF - 8 * scaleF, ctrlCY - 12 * scaleF, 6 * scaleF, 24 * scaleF);
+            ctx.fillRect(barX + 180 * scaleF + 2 * scaleF, ctrlCY - 12 * scaleF, 6 * scaleF, 24 * scaleF);
+        } else {
+            ctx.beginPath();
+            ctx.moveTo(barX + 180 * scaleF - 6 * scaleF, ctrlCY - 12 * scaleF);
+            ctx.lineTo(barX + 180 * scaleF + 10 * scaleF, ctrlCY);
+            ctx.lineTo(barX + 180 * scaleF - 6 * scaleF, ctrlCY + 12 * scaleF);
+            ctx.fill();
+        }
+
+        // Center mini cover and track info
+        const miniCoverSize = 80 * scaleF;
+        const miniCoverX = barX + 380 * scaleF;
+        const miniCoverY = barY + 20 * scaleF;
+        
+        ctx.save();
+        roundRect(ctx, miniCoverX, miniCoverY, miniCoverSize, miniCoverSize, 12 * scaleF);
+        ctx.clip();
+        const activeImg = (activeTrack && activeTrack.id && trackImgCacheRef.current[activeTrack.id]) || bgImgRef.current;
+        if (activeImg) {
+            const imgRatio = activeImg.width / activeImg.height;
+            let drawW = miniCoverSize;
+            let drawH = miniCoverSize;
+            if (imgRatio > 1) {
+                drawW = miniCoverSize * imgRatio;
+            } else {
+                drawH = miniCoverSize / imgRatio;
+            }
+            ctx.drawImage(activeImg, miniCoverX - (drawW - miniCoverSize) / 2, miniCoverY - (drawH - miniCoverSize) / 2, drawW, drawH);
+        } else {
+            ctx.fillStyle = '#e6ddd0';
+            ctx.fill();
+        }
+        ctx.restore();
+
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#3a2d27';
+        ctx.font = `bold ${28 * scaleF}px "${project.globalSettings.titleFont || "Plus Jakarta Sans"}"`;
+        ctx.fillText(activeTrack?.title || 'Untitled', miniCoverX + 110 * scaleF, ctrlCY - 14 * scaleF);
+
+        ctx.fillStyle = 'rgba(224, 184, 133, 0.9)';
+        ctx.font = `500 ${18 * scaleF}px "${project.globalSettings.artistFont || "Plus Jakarta Sans"}"`;
+        ctx.fillText(activeTrack?.artist || project.artist || 'Unknown Artist', miniCoverX + 110 * scaleF, ctrlCY + 14 * scaleF);
+
+        // Progress bar in the glass player
+        const progW = 280 * scaleF;
+        const progX = miniCoverX + 110 * scaleF;
+        const progY = ctrlCY + 30 * scaleF;
+        
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        roundRect(ctx, progX, progY, progW, 4 * scaleF, 2 * scaleF);
+        ctx.fill();
+        
+        if (activeTrack) {
+            const trackElapsed = Math.max(0, state.currentTime - trackStartTime);
+            const progress = Math.min(1, trackElapsed / activeTrack.duration);
+            ctx.fillStyle = 'rgba(224, 184, 133, 1)';
+            roundRect(ctx, progX, progY, progW * progress, 4 * scaleF, 2 * scaleF);
+            ctx.fill();
+        }
+
+        // Right side icons
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.fillText('...', barX + barW - 320 * scaleF, ctrlCY - 10 * scaleF); // Ellipsis
+        
+        ctx.font = `${24 * scaleF}px Arial`;
+        ctx.fillText('🔀', barX + barW - 240 * scaleF, ctrlCY);
+        ctx.fillText('𝄏', barX + barW - 160 * scaleF, ctrlCY); // List icon roughly
+        ctx.fillText('🔊', barX + barW - 80 * scaleF, ctrlCY);
 
       }
+
 
       animationFrameId = requestAnimationFrame(render);
     };
