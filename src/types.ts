@@ -48,3 +48,10 @@ export interface TextSettings {
   opacity: number;
   animation: 'none' | 'fade-in' | 'slide-up';
 }
+
+export interface UserSettings {
+  displayName: string;
+  defaultArtistName: string;
+  defaultFont: string;
+  defaultFormat: '1080p' | 'portrait' | 'square' | '4k';
+}

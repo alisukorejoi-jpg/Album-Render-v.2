@@ -8,12 +8,21 @@ import { signOut } from 'firebase/auth';
 import { AuthModal } from './AuthModal';
 import { loadProjectsFromFirestore, saveProjectToFirestore } from '../lib/db';
 import { AdminDashboard } from './AdminDashboard';
+import { SettingsView } from './SettingsView';
+import { UserSettings } from '../types';
+import { getDoc } from 'firebase/firestore';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export function Dashboard() {
   const { state, dispatch } = useAppContext();
   const [activeTab, setActiveTab] = useState<'projects' | 'templates' | 'settings' | 'admin'>('projects');
+  const [userSettings, setUserSettings] = useState<UserSettings>({
+    displayName: '',
+    defaultArtistName: '',
+    defaultFont: 'Plus Jakarta Sans',
+    defaultFormat: '1080p'
+  });
   const [showCreate, setShowCreate] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [title, setTitle] = useState('');
@@ -31,10 +40,36 @@ export function Dashboard() {
         // Sync user to firestore for admin tracking
         try {
           const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          
+          let currentSettings = {
+            displayName: user.displayName || '',
+            defaultArtistName: '',
+            defaultFont: 'Plus Jakarta Sans',
+            defaultFormat: '1080p' as any
+          };
+
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            currentSettings = {
+              displayName: data.displayName || user.displayName || '',
+              defaultArtistName: data.settings?.defaultArtistName || '',
+              defaultFont: data.settings?.defaultFont || 'Plus Jakarta Sans',
+              defaultFormat: data.settings?.defaultFormat || '1080p'
+            };
+          }
+
+          setUserSettings(currentSettings);
+
           await setDoc(userRef, {
             email: user.email,
-            displayName: user.displayName || '',
-            lastLogin: new Date().toISOString()
+            displayName: currentSettings.displayName,
+            lastLogin: new Date().toISOString(),
+            settings: {
+              defaultArtistName: currentSettings.defaultArtistName,
+              defaultFont: currentSettings.defaultFont,
+              defaultFormat: currentSettings.defaultFormat
+            }
           }, { merge: true });
         } catch (e) {
           console.error('Failed to sync user', e);
@@ -51,6 +86,8 @@ export function Dashboard() {
   }, [user, dispatch]);
 
   const handleCreateClick = () => {
+    if (userSettings.defaultArtistName) setArtist(userSettings.defaultArtistName);
+    if (userSettings.defaultFormat) setResolution(userSettings.defaultFormat);
     setShowCreate(true);
   };
 
@@ -350,12 +387,14 @@ export function Dashboard() {
           )}
 
           {/* Settings View */}
-          {activeTab === 'settings' && (
-            <div className="py-20 text-center">
-              <Settings className="w-12 h-12 text-neutral-800 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-neutral-300 mb-2">Settings</h3>
-              <p className="text-neutral-500 text-sm">Application settings will be available here in the future.</p>
-            </div>
+          {activeTab === 'settings' && user && (
+            <SettingsView 
+              user={user} 
+              settings={userSettings} 
+              setSettings={setUserSettings}
+              projectsCount={state.projects.length}
+              onLogout={() => auth.signOut()}
+            />
           )}
 
         </div>
