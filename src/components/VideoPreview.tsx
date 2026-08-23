@@ -1664,7 +1664,23 @@ export function VideoPreview() {
         
         ctx.restore();
 
-        // 3. Draw Cards (Cover Flow)
+        // 3. Audio Frequency Data
+        let freqData = new Uint8Array(32);
+        const analyser = (window as any).__audioAnalyser;
+        if (analyser && state.isPlaying) {
+             const fullData = new Uint8Array(analyser.frequencyBinCount);
+             analyser.getByteFrequencyData(fullData);
+             // We only need the first 32 bins for our simple visualizer
+             for (let i = 0; i < 32; i++) {
+                  freqData[i] = fullData[i];
+             }
+        } else if (state.isPlaying) {
+             for (let i = 0; i < 32; i++) {
+                  freqData[i] = Math.random() * 150;
+             }
+        }
+
+        // 4. Draw Cards (Cover Flow)
         const drawCard = (x: number, y: number, w: number, h: number, isCenter: boolean, alpha: number, trackForCard?: Track) => {
             ctx.save();
             ctx.shadowColor = isCenter ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.6)';
@@ -1736,11 +1752,12 @@ export function VideoPreview() {
                 ctx.font = `500 ${28 * scaleF}px "${project.globalSettings.artistFont || "Plus Jakarta Sans"}"`;
                 ctx.fillText(displayArtist, cx, y + h - 60 * scaleF);
 
-                // Audio Waveform Fake Graphic
+                // Audio Waveform Graphic
                 const waveY = y + h - 30 * scaleF;
                 ctx.fillStyle = 'rgba(255,255,255,0.6)';
                 for(let i=0; i<24; i++) {
-                   const barH = 5 * scaleF + Math.random() * 15 * scaleF;
+                   const intensity = freqData[i] / 255;
+                   const barH = 5 * scaleF + (intensity * 25 * scaleF);
                    ctx.fillRect(cx - 140 * scaleF + i * 12 * scaleF, waveY - barH/2, 4 * scaleF, barH);
                 }
             } else {
@@ -1755,7 +1772,8 @@ export function VideoPreview() {
                 const waveY = y + h - 20 * scaleF;
                 ctx.fillStyle = 'rgba(255,255,255,0.4)';
                 for(let i=0; i<16; i++) {
-                   const barH = 3 * scaleF + Math.random() * 8 * scaleF;
+                   const intensity = freqData[i] / 255;
+                   const barH = 3 * scaleF + (intensity * 12 * scaleF);
                    ctx.fillRect(cx - 60 * scaleF + i * 8 * scaleF, waveY - barH/2, 2 * scaleF, barH);
                 }
             }

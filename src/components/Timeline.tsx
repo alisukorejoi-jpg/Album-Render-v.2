@@ -37,11 +37,16 @@ export function Timeline() {
         const audioCtx = new AudioContextClass();
         audioCtxRef.current = audioCtx;
         
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256; // Provides 128 frequency bins
+        (window as any).__audioAnalyser = analyser;
+
         const source = audioCtx.createMediaElementSource(audio);
         const dest = audioCtx.createMediaStreamDestination();
         
-        source.connect(dest);
-        source.connect(audioCtx.destination);
+        source.connect(analyser);
+        analyser.connect(dest);
+        analyser.connect(audioCtx.destination);
         
         (window as any).__exportAudioStream = dest.stream;
       } catch (e) {
