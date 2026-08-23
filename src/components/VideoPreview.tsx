@@ -633,6 +633,97 @@ export function VideoPreview() {
         ctx.font = `${28 * scaleF}px Arial`;
         ctx.fillText('🔀', ctrlX - 240 * scaleF, ctrlY);
         ctx.fillText('🔁', ctrlX + 240 * scaleF, ctrlY);
+
+        // --- Playlist on the Right Side ---
+        const listW = 500 * scaleF;
+        const listH = ch - 240 * scaleF;
+        const listX = cw - listW - 120 * scaleF;
+        const listY = 120 * scaleF;
+
+        // Draw glass panel
+        ctx.save();
+        ctx.fillStyle = 'rgba(20, 20, 20, 0.4)';
+        ctx.shadowColor = 'rgba(255, 180, 50, 0.4)';
+        ctx.shadowBlur = 30 * scaleF;
+        ctx.lineWidth = 2 * scaleF;
+        ctx.strokeStyle = 'rgba(255, 200, 80, 0.5)';
+        roundRect(ctx, listX, listY, listW, listH, 30 * scaleF);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // Playlist title
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.font = `bold ${32 * scaleF}px "${project.globalSettings.titleFont || "Plus Jakarta Sans"}"`;
+        ctx.fillText('Playlist', listX + 40 * scaleF, listY + 60 * scaleF);
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.fillRect(listX + 40 * scaleF, listY + 100 * scaleF, listW - 80 * scaleF, 2 * scaleF);
+
+        // Playlist items
+        ctx.save();
+        roundRect(ctx, listX, listY, listW, listH, 30 * scaleF);
+        ctx.clip();
+
+        let itemY = listY + 120 * scaleF;
+        const itemH = 90 * scaleF;
+
+        project.tracks.forEach((track, index) => {
+            if (itemY > listY + listH - itemH) return; // Hide if overflowing
+
+            const isActive = activeTrack?.id === track.id;
+            
+            if (isActive) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.fillRect(listX, itemY, listW, itemH);
+                
+                ctx.fillStyle = 'rgba(255, 200, 80, 1)';
+                ctx.fillRect(listX, itemY + 20 * scaleF, 4 * scaleF, itemH - 40 * scaleF);
+            }
+            
+            // Number / Icon
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            if (isActive) {
+                ctx.fillStyle = 'rgba(255, 200, 80, 1)';
+                ctx.font = `${20 * scaleF}px Arial`;
+                ctx.fillText('▶', listX + 40 * scaleF, itemY + itemH/2);
+            } else {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.font = `500 ${22 * scaleF}px font-mono`;
+                ctx.fillText((index + 1).toString().padStart(2, '0'), listX + 40 * scaleF, itemY + itemH/2);
+            }
+            
+            // Title
+            ctx.textAlign = 'left';
+            ctx.fillStyle = isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.7)';
+            ctx.font = `bold ${22 * scaleF}px "${project.globalSettings.titleFont || "Plus Jakarta Sans"}"`;
+            
+            // Truncate title if too long
+            let title = track.title || 'Untitled';
+            if (ctx.measureText(title).width > 240 * scaleF) {
+                title = title.substring(0, 18) + '...';
+            }
+            ctx.fillText(title, listX + 80 * scaleF, itemY + itemH/2 - 12 * scaleF);
+            
+            // Artist
+            ctx.fillStyle = isActive ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.4)';
+            ctx.font = `500 ${16 * scaleF}px "${project.globalSettings.artistFont || "Plus Jakarta Sans"}"`;
+            ctx.fillText(track.artist || project.artist || 'Unknown', listX + 80 * scaleF, itemY + itemH/2 + 14 * scaleF);
+            
+            // Duration
+            ctx.textAlign = 'right';
+            ctx.fillStyle = isActive ? 'rgba(255, 200, 80, 0.9)' : 'rgba(255, 255, 255, 0.3)';
+            ctx.font = `500 ${18 * scaleF}px font-mono`;
+            ctx.fillText(formatTime(track.duration), listX + listW - 40 * scaleF, itemY + itemH/2);
+            
+            itemY += itemH;
+        });
+
+        ctx.restore();
+
       } else if (template === 'floating_cards') {
         const scaleF = targetWidth / 1920;
         const cw = targetWidth;
