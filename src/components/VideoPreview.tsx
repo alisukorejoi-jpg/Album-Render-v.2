@@ -1477,7 +1477,15 @@ export function VideoPreview() {
             ctx.beginPath();
             roundRect(ctx, miniCoverX, miniCoverY, miniCoverSize, miniCoverSize, 10 * scaleF);
             ctx.clip();
-            ctx.drawImage(activeImg, miniCoverX, miniCoverY, miniCoverSize, miniCoverSize);
+            const imgRatio = activeImg.width / activeImg.height;
+            let drawW = miniCoverSize;
+            let drawH = miniCoverSize;
+            if (imgRatio > 1) {
+                drawW = miniCoverSize * imgRatio;
+            } else {
+                drawH = miniCoverSize / imgRatio;
+            }
+            ctx.drawImage(activeImg, miniCoverX - (drawW - miniCoverSize) / 2, miniCoverY - (drawH - miniCoverSize) / 2, drawW, drawH);
             ctx.restore();
         }
         
@@ -1635,9 +1643,25 @@ export function VideoPreview() {
         ctx.ellipse(podX, podY, podW / 2, podH / 2, 0, 0, Math.PI * 2);
         ctx.fillStyle = '#1e140d';
         ctx.fill();
-        ctx.lineWidth = 2 * scaleF;
+        
+        // Rotate outer dash
+        ctx.save();
+        ctx.lineWidth = 3 * scaleF;
         ctx.strokeStyle = '#e0b885';
+        ctx.setLineDash([30 * scaleF, 50 * scaleF]);
+        ctx.lineDashOffset = -(performance.now() / 25) * scaleF;
+        ctx.shadowColor = '#e0b885';
+        ctx.shadowBlur = 15 * scaleF;
         ctx.stroke();
+        ctx.restore();
+
+        // Inner solid ring for structure
+        ctx.beginPath();
+        ctx.ellipse(podX, podY, podW / 2 - 6 * scaleF, podH / 2 - 6 * scaleF, 0, 0, Math.PI * 2);
+        ctx.lineWidth = 1 * scaleF;
+        ctx.strokeStyle = 'rgba(224, 184, 133, 0.3)';
+        ctx.stroke();
+        
         ctx.restore();
 
         // 3. Draw Cards (Cover Flow)
@@ -1669,7 +1693,17 @@ export function VideoPreview() {
             // Draw image
             const cardImg = (trackForCard && trackForCard.id && trackImgCacheRef.current[trackForCard.id]) || bgImgRef.current;
             if (cardImg) {
-                ctx.drawImage(cardImg, x, y, w, h);
+                const imgRatio = cardImg.width / cardImg.height;
+                const targetRatio = w / h;
+                let sx = 0, sy = 0, sWidth = cardImg.width, sHeight = cardImg.height;
+                if (imgRatio > targetRatio) {
+                    sWidth = cardImg.height * targetRatio;
+                    sx = (cardImg.width - sWidth) / 2;
+                } else {
+                    sHeight = cardImg.width / targetRatio;
+                    sy = (cardImg.height - sHeight) / 2;
+                }
+                ctx.drawImage(cardImg, sx, sy, sWidth, sHeight, x, y, w, h);
             }
 
             // Dark overlay for text readability at bottom
@@ -1843,7 +1877,15 @@ export function VideoPreview() {
         ctx.clip();
         const activeImg = (activeTrack && activeTrack.id && trackImgCacheRef.current[activeTrack.id]) || bgImgRef.current;
         if (activeImg) {
-            ctx.drawImage(activeImg, miniCoverX, miniCoverY, miniCoverSize, miniCoverSize);
+            const imgRatio = activeImg.width / activeImg.height;
+            let drawW = miniCoverSize;
+            let drawH = miniCoverSize;
+            if (imgRatio > 1) {
+                drawW = miniCoverSize * imgRatio;
+            } else {
+                drawH = miniCoverSize / imgRatio;
+            }
+            ctx.drawImage(activeImg, miniCoverX - (drawW - miniCoverSize) / 2, miniCoverY - (drawH - miniCoverSize) / 2, drawW, drawH);
         } else {
             ctx.fillStyle = '#333';
             ctx.fill();
