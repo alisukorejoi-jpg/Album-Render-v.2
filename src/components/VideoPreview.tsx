@@ -16,6 +16,35 @@ export function VideoPreview() {
   const lastTrackIndexRef = useRef<number>(-1);
   const currentOffsetRef = useRef<number>(0);
   const targetOffsetRef = useRef<number>(0);
+
+  const currentLightColorRef = useRef({r: 249, g: 246, b: 240});
+  const targetLightColorRef = useRef({r: 249, g: 246, b: 240});
+  const lastExtractedCoverRef = useRef<HTMLImageElement | null>(null);
+
+  const getAverageColor = (imgElement: HTMLImageElement | null) => {
+    if (!imgElement) return {r: 249, g: 246, b: 240};
+    try {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      if (!context) return {r: 249, g: 246, b: 240};
+      canvas.width = 64;
+      canvas.height = 64;
+      context.drawImage(imgElement, 0, 0, 64, 64);
+      const data = context.getImageData(0, 0, 64, 64).data;
+      let r = 0, g = 0, b = 0;
+      let count = 0;
+      for (let i = 0; i < data.length; i += 4) {
+         r += data[i];
+         g += data[i+1];
+         b += data[i+2];
+         count++;
+      }
+      return { r: Math.round(r/count), g: Math.round(g/count), b: Math.round(b/count) };
+    } catch(e) {
+      return {r: 249, g: 246, b: 240};
+    }
+  };
+
   
   // Calculate Target Resolution
   let targetWidth = 1920;
@@ -2042,12 +2071,32 @@ export function VideoPreview() {
         const ch = targetHeight;
         const scaleF = targetWidth / 1920;
         
-        // 1. Background (Warm Spotlight)
-        const bgGrad = ctx.createRadialGradient(cw / 2, ch / 2 + 100 * scaleF, 100 * scaleF, cw / 2, ch / 2, 1200 * scaleF);
-        bgGrad.addColorStop(0, '#f9f6f0');
-        bgGrad.addColorStop(0.5, '#f0eade');
-        bgGrad.addColorStop(1, '#e3dbcf');
-        ctx.fillStyle = bgGrad;
+        // 1. Base Background (Warm Spotlight)
+        const baseGrad = ctx.createRadialGradient(cw / 2, ch / 2 + 100 * scaleF, 100 * scaleF, cw / 2, ch / 2, 1200 * scaleF);
+        baseGrad.addColorStop(0, '#f9f6f0');
+        baseGrad.addColorStop(0.5, '#f0eade');
+        baseGrad.addColorStop(1, '#e3dbcf');
+        ctx.fillStyle = baseGrad;
+        ctx.fillRect(0, 0, cw, ch);
+
+        // 1.5 Dynamic Spotlight overlay
+        const activeImgForColor = (activeTrack && activeTrack.id && trackImgCacheRef.current[activeTrack.id]) || bgImgRef.current;
+        if (activeImgForColor !== lastExtractedCoverRef.current) {
+          lastExtractedCoverRef.current = activeImgForColor;
+          targetLightColorRef.current = getAverageColor(activeImgForColor);
+        }
+        const tc = targetLightColorRef.current;
+        const cc = currentLightColorRef.current;
+        // Smooth lerp
+        cc.r += (tc.r - cc.r) * 0.04;
+        cc.g += (tc.g - cc.g) * 0.04;
+        cc.b += (tc.b - cc.b) * 0.04;
+
+        const dynGrad = ctx.createRadialGradient(cw / 2, ch / 2 - 50 * scaleF, 50 * scaleF, cw / 2, ch / 2, 1100 * scaleF);
+        dynGrad.addColorStop(0, `rgba(${Math.round(cc.r)}, ${Math.round(cc.g)}, ${Math.round(cc.b)}, 0.45)`);
+        dynGrad.addColorStop(0.4, `rgba(${Math.round(cc.r)}, ${Math.round(cc.g)}, ${Math.round(cc.b)}, 0.15)`);
+        dynGrad.addColorStop(1, `rgba(${Math.round(cc.r)}, ${Math.round(cc.g)}, ${Math.round(cc.b)}, 0)`);
+        ctx.fillStyle = dynGrad;
         ctx.fillRect(0, 0, cw, ch);
 
         // 2. Podium
