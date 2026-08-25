@@ -1,50 +1,39 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppContext } from '../store';
+import { getTrackTimings, getActiveTrack, getPlayingTracks } from '../utils';
 import { Play, Pause, SkipBack, ZoomIn, ZoomOut } from 'lucide-react';
 
 export function Timeline() {
   const { state, dispatch } = useAppContext();
   const project = state.currentProject!;
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [zoom, setZoom] = useState(1);
-  
-  const totalDuration = project.tracks.reduce((sum, t) => sum + t.duration, 0);
-  
-  // Find current track
-  let currentTrack = null;
-  let trackStartTime = 0;
-  let timeAccumulator = 0;
-  for (const track of project.tracks) {
-    if (state.currentTime >= timeAccumulator && state.currentTime < timeAccumulator + track.duration) {
-      currentTrack = track;
-      trackStartTime = timeAccumulator;
-      break;
-    }
-    timeAccumulator += track.duration;
-  }
-  
-  // Initialize audio element
+
+  const audioPoolRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const timeRef = useRef(state.currentTime);
 
   useEffect(() => {
-    if (!audioRef.current) {
-      const audio = new Audio();
-      audio.crossOrigin = "anonymous";
-      audioRef.current = audio;
+    timeRef.current = state.currentTime;
+  }, [state.currentTime]);
 
+  const { totalDuration, startTimes } = getTrackTimings(project);
+  const { activeTrack: currentTrack, trackStartTime } = getActiveTrack(project, state.currentTime);
+
+  // Init AudioContext once
+  useEffect(() => {
+    if (!audioCtxRef.current) {
       try {
         const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
         const audioCtx = new AudioContextClass();
         audioCtxRef.current = audioCtx;
         
         const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 256; // Provides 128 frequency bins
+        analyser.fftSize = 256;
+        analyserRef.current = analyser;
         (window as any).__audioAnalyser = analyser;
 
-        const source = audioCtx.createMediaElementSource(audio);
         const dest = audioCtx.createMediaStreamDestination();
-        
-        source.connect(analyser);
         analyser.connect(dest);
         analyser.connect(audioCtx.destination);
         
@@ -53,92 +42,109 @@ export function Timeline() {
         console.warn("Could not initialize audio routing", e);
       }
     }
+
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close();
-      }
+      audioPoolRef.current.forEach((audio) => {
+        audio.pause();
+        audio.src = '';
+      });
+      audioPoolRef.current.clear();
     };
   }, []);
 
-  // Sync audio with state
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !currentTrack) return;
+  // Update Audio Pool function
+  const updateAudioPool = (time: number, forceSeek = false) => {
+    const playingTracks = getPlayingTracks(project, time);
+    const pool = audioPoolRef.current;
+    
+    // Set of active track IDs to clean up old ones
+    const activeIds = new Set(playingTracks.map(p => p.track.id));
 
-    if (audio.src !== currentTrack.audioUrl) {
-      audio.src = currentTrack.audioUrl;
-      audio.currentTime = state.currentTime - trackStartTime;
-    }
-
-    if (state.isPlaying) {
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // Auto-play was prevented, handle gracefully if needed
-        });
+    // Cleanup tracks no longer playing
+    pool.forEach((audio, id) => {
+      if (!activeIds.has(id)) {
+        audio.pause();
+        // audio.src = ''; // Optional, keeps it loaded if we seek back soon
       }
-    } else {
-      audio.pause();
-    }
-  }, [state.isPlaying, currentTrack, state.currentTime, trackStartTime]);
+    });
 
-  // Handle track ending naturally to advance to the next track
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !currentTrack) return;
-
-    const handleEnded = () => {
-      // Advance precisely to the start of the next track bracket
-      const nextTime = trackStartTime + currentTrack.duration;
-      if (nextTime >= totalDuration) {
-         dispatch({ type: 'SET_PLAYING', payload: false });
-         dispatch({ type: 'SET_CURRENT_TIME', payload: totalDuration });
-      } else {
-         dispatch({ type: 'SET_CURRENT_TIME', payload: nextTime });
+    // Update or create active tracks
+    playingTracks.forEach(({ track, localTime, volume }) => {
+      let audio = pool.get(track.id);
+      
+      if (!audio) {
+        audio = new Audio();
+        audio.crossOrigin = "anonymous";
+        audio.src = track.audioUrl;
+        
+        // Connect to analyser
+        if (audioCtxRef.current && analyserRef.current) {
+           const source = audioCtxRef.current.createMediaElementSource(audio);
+           source.connect(analyserRef.current);
+        }
+        
+        pool.set(track.id, audio);
+      } else if (audio.src !== track.audioUrl) {
+        audio.src = track.audioUrl;
       }
-    };
 
-    audio.addEventListener('ended', handleEnded);
-    return () => audio.removeEventListener('ended', handleEnded);
-  }, [currentTrack, trackStartTime, totalDuration, dispatch]);
+      // Sync time if drifting or forced
+      const drift = Math.abs(audio.currentTime - localTime);
+      if (forceSeek || drift > 0.3) {
+        audio.currentTime = localTime;
+      }
 
-  const togglePlay = () => {
-    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume();
-    }
-    if (state.currentTime >= totalDuration) {
-      dispatch({ type: 'SET_CURRENT_TIME', payload: 0 });
-    }
-    dispatch({ type: 'SET_PLAYING', payload: !state.isPlaying });
+      audio.volume = volume;
+
+      if (state.isPlaying && audio.paused) {
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {});
+        }
+      } else if (!state.isPlaying && !audio.paused) {
+        audio.pause();
+      }
+    });
   };
 
-  const handleSkipBack = () => {
-    dispatch({ type: 'SET_CURRENT_TIME', payload: 0 });
-  };
-
+  // Main playback engine
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (state.isPlaying) {
-      interval = setInterval(() => {
-        // Sync time from audio if playing, to be more accurate
-        if (audioRef.current && !audioRef.current.paused) {
-          const newTime = trackStartTime + audioRef.current.currentTime;
-          if (newTime >= totalDuration) {
-             dispatch({ type: 'SET_PLAYING', payload: false });
-             dispatch({ type: 'SET_CURRENT_TIME', payload: totalDuration });
-          } else {
-             dispatch({ type: 'SET_CURRENT_TIME', payload: newTime });
-          }
-        }
-      }, 50);
-    }
-    return () => clearInterval(interval);
-  }, [state.isPlaying, trackStartTime, totalDuration, dispatch]);
+    let lastTick = performance.now();
 
+    // Initial sync
+    updateAudioPool(state.currentTime, true);
+
+    if (state.isPlaying) {
+      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+
+      interval = setInterval(() => {
+        const now = performance.now();
+        const delta = (now - lastTick) / 1000;
+        lastTick = now;
+
+        let nextTime = timeRef.current + delta;
+        if (nextTime >= totalDuration) {
+           nextTime = totalDuration;
+           dispatch({ type: 'SET_PLAYING', payload: false });
+        }
+        
+        dispatch({ type: 'SET_CURRENT_TIME', payload: nextTime });
+        updateAudioPool(nextTime, false);
+        
+      }, 50);
+    } else {
+      updateAudioPool(state.currentTime, false);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [state.isPlaying, project.globalSettings.crossfade, totalDuration, dispatch]); // Added crossfade to deps so it updates instantly
+
+  // For clicks / manual seeking
   const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -146,23 +152,21 @@ export function Timeline() {
     const newTime = percentage * totalDuration;
     
     dispatch({ type: 'SET_CURRENT_TIME', payload: newTime });
-    
-    if (audioRef.current) {
-       // Force update audio time immediately to prevent jump back
-       // The effect above will handle the src change if track boundary is crossed
-       const newTrackAccumulator = getTrackStartTime(newTime);
-       audioRef.current.currentTime = newTime - newTrackAccumulator;
-    }
+    updateAudioPool(newTime, true);
   };
-  
-  function getTrackStartTime(time: number) {
-    let acc = 0;
-    for (const track of project.tracks) {
-       if (time >= acc && time < acc + track.duration) return acc;
-       acc += track.duration;
+
+  const togglePlay = () => {
+    if (state.currentTime >= totalDuration) {
+      dispatch({ type: 'SET_CURRENT_TIME', payload: 0 });
+      updateAudioPool(0, true);
     }
-    return 0;
-  }
+    dispatch({ type: 'SET_PLAYING', payload: !state.isPlaying });
+  };
+
+  const handleSkipBack = () => {
+    dispatch({ type: 'SET_CURRENT_TIME', payload: 0 });
+    updateAudioPool(0, true);
+  };
 
   return (
     <div className="flex flex-col h-full min-h-[120px]">
@@ -200,6 +204,26 @@ export function Timeline() {
               className="w-20 md:w-24 accent-cyan-500 cursor-pointer"
             />
             <ZoomIn className="w-4 h-4 text-neutral-500" />
+          </div>
+          <div className="hidden md:block w-px h-4 bg-neutral-800 shrink-0"></div>
+          <div className="flex items-center gap-2 shrink-0 group relative">
+            <span className="text-[10px] text-neutral-500 uppercase font-bold hidden lg:block">Crossfade:</span>
+            <input 
+              type="range" 
+              min="0" 
+              max="15" 
+              step="1" 
+              value={project.globalSettings.crossfade || 0}
+              onChange={(e) => {
+                const newProject = { 
+                  ...project, 
+                  globalSettings: { ...project.globalSettings, crossfade: parseFloat(e.target.value) } 
+                };
+                dispatch({ type: 'UPDATE_PROJECT', payload: newProject });
+              }}
+              className="w-16 md:w-20 accent-cyan-500 cursor-pointer"
+            />
+            <span className="text-[10px] text-neutral-400 font-mono w-4">{(project.globalSettings.crossfade || 0)}s</span>
           </div>
         </div>
       </div>

@@ -29,6 +29,7 @@ export interface Track {
 export interface GlobalSettings {
   template: string;
   backgroundColor?: string;
+  crossfade?: number;
   textSettings: TextSettings;
   titleFont?: string;
   artistFont?: string;

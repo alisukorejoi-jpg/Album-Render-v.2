@@ -99,7 +99,6 @@ export function Inspector() {
                 </span>
               </div>
             </div>
-
             <div className="w-full h-px bg-neutral-800 my-2" />
 
             <div>

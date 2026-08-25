@@ -143,7 +143,9 @@ export function Editor() {
             ) : (
               <div className="space-y-4">
                 <div className="p-4 border border-neutral-800 rounded-lg bg-neutral-900/50">
-                   <p className="text-[10px] text-neutral-400">Edit Album Title, Artist, and Cover in the Inspector on the right.</p>
+                   <p className="text-[10px] text-neutral-400 mb-3">Edit Album Title, Artist, and Cover in the Inspector on the right.</p>
+                   <p className="text-[10px] text-cyan-500 font-bold mb-1">Crossfade (Global)</p>
+                   <p className="text-[10px] text-neutral-400">Pengaturan Crossfade di panel Timeline View bawah berlaku secara global. Semua lagu di album akan otomatis menggunakan durasi transisi yang sama.</p>
                 </div>
               </div>
             )}
