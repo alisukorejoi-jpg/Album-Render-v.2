@@ -162,7 +162,7 @@ export function Editor() {
       </div>
 
       {/* Bottom - Timeline */}
-      <div className="h-auto lg:h-48 border-t border-neutral-800 bg-[#0A0A0A] flex flex-col shrink-0 p-3 overflow-x-auto">
+      <div className="h-auto lg:h-32 border-t border-neutral-800 bg-[#0A0A0A] flex flex-col shrink-0 p-3 overflow-x-auto">
         <Timeline />
       </div>
 
