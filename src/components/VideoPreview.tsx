@@ -20,6 +20,7 @@ export function VideoPreview() {
   const currentLightColorRef = useRef({r: 249, g: 246, b: 240});
   const targetLightColorRef = useRef({r: 249, g: 246, b: 240});
   const lastExtractedCoverRef = useRef<HTMLImageElement | null>(null);
+  const vinylRotationRef = useRef<number>(0);
 
   const getAverageColor = (imgElement: HTMLImageElement | null) => {
     if (!imgElement) return {r: 249, g: 246, b: 240};
@@ -2066,6 +2067,284 @@ export function VideoPreview() {
         ctx.fillText('🔀', barX + barW - 240 * scaleF, ctrlCY);
         ctx.fillText('𝄏', barX + barW - 160 * scaleF, ctrlCY); // List icon roughly
         ctx.fillText('🔊', barX + barW - 80 * scaleF, ctrlCY);
+      } else if (template === 'retro_vinyl') {
+        const cw = targetWidth;
+        const ch = targetHeight;
+        const scaleF = targetWidth / 1920;
+
+        // Colors
+        const activeImgForColor = (activeTrack && activeTrack.id && trackImgCacheRef.current[activeTrack.id]) || bgImgRef.current;
+        if (activeImgForColor !== lastExtractedCoverRef.current) {
+          lastExtractedCoverRef.current = activeImgForColor;
+          targetLightColorRef.current = getAverageColor(activeImgForColor);
+        }
+        const tc = targetLightColorRef.current;
+        const cc = currentLightColorRef.current;
+        cc.r += (tc.r - cc.r) * 0.04;
+        cc.g += (tc.g - cc.g) * 0.04;
+        cc.b += (tc.b - cc.b) * 0.04;
+
+        const rightColor = `rgb(${Math.round(cc.r)}, ${Math.round(cc.g)}, ${Math.round(cc.b)})`;
+        const leftColor = project.globalSettings.backgroundColor || '#2A6361';
+        
+        // Calculate brightness for right side playlist contrast
+        const isLightBg = ((cc.r * 299 + cc.g * 587 + cc.b * 114) / 1000) > 160;
+        const pTextColor = isLightBg ? '#111111' : '#ffffff';
+        const pTextMuted = isLightBg ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.7)';
+        const pTextFaint = isLightBg ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.4)';
+        const pHighlight = isLightBg ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.1)';
+        const pBorder = isLightBg ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)';
+
+        // Background - Split Wave
+        ctx.fillStyle = leftColor;
+        ctx.fillRect(0, 0, cw, ch);
+
+        ctx.fillStyle = rightColor;
+        ctx.beginPath();
+        ctx.moveTo(cw * 0.35, 0);
+        ctx.bezierCurveTo(
+            cw * 0.65, ch * 0.3, 
+            cw * 0.25, ch * 0.7, 
+            cw * 0.55, ch
+        );
+        ctx.lineTo(cw, ch);
+        ctx.lineTo(cw, 0);
+        ctx.fill();
+        
+        // Background noise/texture (subtle dots overlay)
+        ctx.fillStyle = 'rgba(0,0,0,0.05)';
+        for(let i=0; i<100; i++){
+           // Too expensive for real-time 60fps to draw random dots, skip for now
+        }
+
+        // 2. Left Typography
+        const leftX = 150 * scaleF; // Reverted back to original margin now that textAlign is fixed
+        // Moved the starting Y position further up so text doesn't get cut off
+        let leftY = ch / 2 - 280 * scaleF;
+
+        // Removed 'ALBUM' label text as requested
+
+        const maxTextW = 600 * scaleF; // Prevent hitting vinyl
+        ctx.textAlign = 'left'; // FIX: Reset text align after it was accidentally removed
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `900 ${85 * scaleF}px "${project.globalSettings.titleFont || 'Space Grotesk'}"`; // Reduced font size
+        ctx.textBaseline = 'middle';
+        
+        const trackTitle = (activeTrack?.title || 'Unknown').toUpperCase(); // kept for bottom controls
+        const albumTitle = (project.title || 'Unknown Album').toUpperCase();
+        const titleWords = albumTitle.split(' ');
+        let line1 = albumTitle;
+        let line2 = '';
+        if (titleWords.length > 1 && albumTitle.length > 10) {
+             const mid = Math.ceil(titleWords.length / 2);
+             line1 = titleWords.slice(0, mid).join(' ');
+             line2 = titleWords.slice(mid).join(' ');
+        }
+        
+        if (line2) {
+             ctx.fillText(line1, leftX, leftY, maxTextW);
+             ctx.fillText(line2, leftX, leftY + 95 * scaleF, maxTextW);
+             leftY += 95 * scaleF;
+        } else {
+             ctx.fillText(line1, leftX, leftY, maxTextW);
+        }
+
+        // Zigzag line (fake waveform)
+        leftY += 100 * scaleF;
+        ctx.strokeStyle = '#ff4d4d'; // Red accent
+        ctx.lineWidth = 4 * scaleF;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(leftX, leftY);
+        ctx.lineTo(leftX + 20 * scaleF, leftY - 15 * scaleF);
+        ctx.lineTo(leftX + 40 * scaleF, leftY + 15 * scaleF);
+        ctx.lineTo(leftX + 60 * scaleF, leftY - 5 * scaleF);
+        ctx.lineTo(leftX + 80 * scaleF, leftY);
+        ctx.lineTo(leftX + 120 * scaleF, leftY);
+        ctx.stroke();
+
+        leftY += 50 * scaleF;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${40 * scaleF}px "${project.globalSettings.artistFont || 'Inter'}"`;
+        ctx.fillText(project.artist || 'Unknown Artist', leftX, leftY, maxTextW);
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.font = `bold ${14 * scaleF}px "${project.globalSettings.artistFont || 'Inter'}"`;
+        ctx.letterSpacing = '4px';
+        ctx.fillText('ARTIST', leftX, leftY + 50 * scaleF);
+        ctx.letterSpacing = '0px';
+
+        // 3. Center Vinyl
+        const vinylCx = cw / 2;
+        const vinylCy = ch / 2 - 40 * scaleF;
+        const vinylR = 400 * scaleF;
+
+        if (state.isPlaying) {
+             vinylRotationRef.current += 0.005; // rotation speed
+        }
+
+        ctx.save();
+        ctx.translate(vinylCx, vinylCy);
+
+        // Vinyl Shadow
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 50 * scaleF;
+        ctx.shadowOffsetX = 20 * scaleF;
+        ctx.shadowOffsetY = 20 * scaleF;
+
+        // Vinyl Base
+        ctx.beginPath();
+        ctx.arc(0, 0, vinylR, 0, Math.PI * 2);
+        ctx.fillStyle = '#111111';
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+
+        // Vinyl Grooves
+        ctx.strokeStyle = '#1d1d1d';
+        ctx.lineWidth = 1.5 * scaleF;
+        for (let r = 140; r < 380; r += 12) {
+            ctx.beginPath();
+            ctx.arc(0, 0, r * scaleF, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Vinyl Highlight (gradient fixed to light source, doesn't rotate)
+        const vGrad = ctx.createLinearGradient(-vinylR, -vinylR, vinylR, vinylR);
+        vGrad.addColorStop(0, 'rgba(255,255,255,0.15)');
+        vGrad.addColorStop(0.3, 'rgba(255,255,255,0)');
+        vGrad.addColorStop(0.7, 'rgba(255,255,255,0)');
+        vGrad.addColorStop(1, 'rgba(255,255,255,0.05)');
+        ctx.fillStyle = vGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, vinylR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Apply rotation for the label
+        ctx.rotate(vinylRotationRef.current);
+
+        // Vinyl Label (Cover Image)
+        const labelR = 130 * scaleF;
+        ctx.beginPath();
+        ctx.arc(0, 0, labelR, 0, Math.PI * 2);
+        ctx.clip();
+        
+        if (activeImgForColor) {
+            ctx.drawImage(activeImgForColor, -labelR, -labelR, labelR * 2, labelR * 2);
+        } else {
+            ctx.fillStyle = '#333';
+            ctx.fillRect(-labelR, -labelR, labelR * 2, labelR * 2);
+        }
+
+        // Inner hole
+        ctx.beginPath();
+        ctx.arc(0, 0, 12 * scaleF, 0, Math.PI * 2);
+        ctx.fillStyle = '#111';
+        ctx.fill();
+
+        ctx.restore();
+
+        // 4. Center Bottom Controls
+        const ctrlY = vinylCy + vinylR + 80 * scaleF;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${24 * scaleF}px "${project.globalSettings.titleFont || 'Space Grotesk'}"`;
+        ctx.fillText(trackTitle, cw / 2, ctrlY);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = `${16 * scaleF}px "${project.globalSettings.artistFont || 'Inter'}"`;
+        ctx.fillText(activeTrack?.artist || project.artist || 'Unknown Artist', cw / 2, ctrlY + 35 * scaleF);
+
+        // Simple control icons
+        ctx.font = `${20 * scaleF}px Arial`;
+        ctx.fillStyle = '#ffffff';
+        const isPlayingIcon = state.isPlaying ? '⏸' : '▶';
+        ctx.fillText(`⏮       ${isPlayingIcon}       ⏭`, cw / 2, ctrlY - 45 * scaleF);
+
+
+        // 5. Right Playlist
+        const listX = cw - 520 * scaleF;
+        const listW = 460 * scaleF;
+        const listStartY = ch / 2 - 250 * scaleF;
+        const itemH = 90 * scaleF;
+
+        const activeIdx = activeTrack ? project.tracks.findIndex(t => t.id === activeTrack.id) : 0;
+        let startTrackIdx = Math.max(0, activeIdx - 2);
+        if (startTrackIdx + 5 > project.tracks.length) {
+             startTrackIdx = Math.max(0, project.tracks.length - 5);
+        }
+        const displayTracks = project.tracks.slice(startTrackIdx, startTrackIdx + 5);
+
+        displayTracks.forEach((t, i) => {
+             const realIdx = startTrackIdx + i + 1;
+             const iy = listStartY + (i * (itemH + 15 * scaleF));
+             const isPlaying = t.id === activeTrack?.id;
+
+             if (isPlaying) {
+                 ctx.save();
+                 ctx.fillStyle = pHighlight;
+                 ctx.beginPath();
+                 ctx.roundRect(listX - 20 * scaleF, iy - 10 * scaleF, listW, itemH + 20 * scaleF, 16 * scaleF);
+                 ctx.fill();
+                 ctx.strokeStyle = pBorder;
+                 ctx.lineWidth = 1 * scaleF;
+                 ctx.stroke();
+                 ctx.restore();
+             }
+
+             // Number
+             ctx.textAlign = 'right';
+             ctx.textBaseline = 'middle';
+             ctx.fillStyle = isPlaying ? pTextColor : pTextFaint;
+             ctx.font = `${14 * scaleF}px "${project.globalSettings.titleFont || 'Space Grotesk'}"`;
+             ctx.fillText(realIdx.toString().padStart(2, '0'), listX, iy + itemH/2);
+
+             // Thumb
+             const thumbX = listX + 20 * scaleF;
+             const tImg = trackImgCacheRef.current[t.id] || bgImgRef.current;
+             const thumbS = 64 * scaleF;
+             
+             if (tImg) {
+                 ctx.save();
+                 ctx.beginPath();
+                 ctx.roundRect(thumbX, iy + (itemH - thumbS)/2, thumbS, thumbS, 12 * scaleF);
+                 ctx.clip();
+                 ctx.drawImage(tImg, thumbX, iy + (itemH - thumbS)/2, thumbS, thumbS);
+                 ctx.restore();
+             } else {
+                 ctx.fillStyle = '#444';
+                 ctx.beginPath();
+                 ctx.roundRect(thumbX, iy + (itemH - thumbS)/2, thumbS, thumbS, 12 * scaleF);
+                 ctx.fill();
+             }
+
+             if (isPlaying) {
+                 ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                 ctx.beginPath();
+                 ctx.roundRect(thumbX, iy + (itemH - thumbS)/2, thumbS, thumbS, 12 * scaleF);
+                 ctx.fill();
+                 ctx.fillStyle = '#ffffff';
+                 ctx.fillRect(thumbX + thumbS/2 - 6 * scaleF, iy + itemH/2 - 8 * scaleF, 4 * scaleF, 16 * scaleF);
+                 ctx.fillRect(thumbX + thumbS/2 + 2 * scaleF, iy + itemH/2 - 8 * scaleF, 4 * scaleF, 16 * scaleF);
+             }
+
+             // Text
+             ctx.textAlign = 'left';
+             ctx.fillStyle = isPlaying ? pTextColor : pTextMuted;
+             ctx.font = `bold ${20 * scaleF}px "${project.globalSettings.titleFont || 'Space Grotesk'}"`;
+             ctx.fillText(t.title, thumbX + thumbS + 20 * scaleF, iy + itemH/2 - 12 * scaleF);
+             
+             ctx.fillStyle = isPlaying ? pTextMuted : pTextFaint;
+             ctx.font = `${15 * scaleF}px "${project.globalSettings.artistFont || 'Inter'}"`;
+             ctx.fillText(t.artist || project.artist, thumbX + thumbS + 20 * scaleF, iy + itemH/2 + 14 * scaleF);
+             
+             // Duration
+             ctx.textAlign = 'right';
+             ctx.fillStyle = isPlaying ? pTextMuted : pTextFaint;
+             ctx.fillText(formatTime(t.duration), listX + listW - 30 * scaleF, iy + itemH/2);
+        });
+
       } else if (template === 'cover_flow_3d_light') {
         const cw = targetWidth;
         const ch = targetHeight;

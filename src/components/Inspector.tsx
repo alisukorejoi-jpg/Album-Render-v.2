@@ -35,6 +35,7 @@ export function Inspector() {
             <option value="neumorphic_light">Neumorphic Light (Mobile)</option>
             <option value="topographic_player">Topographic Player</option>
             <option value="cover_flow_player">Cover Flow Player</option>
+            <option value="retro_vinyl">Retro Vinyl</option>
           </select>
         </div>
 
