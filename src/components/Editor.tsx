@@ -158,7 +158,7 @@ export function Editor() {
         </div>
 
         {/* Right Panel - Inspector */}
-        <div className="w-full lg:w-64 border-t lg:border-t-0 lg:border-l border-neutral-800 bg-[#0F0F0F] flex flex-col p-4 shrink-0">
+        <div className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-neutral-800 bg-[#0F0F0F] flex flex-col p-4 shrink-0 overflow-y-auto">
           <Inspector />
         </div>
       </div>
