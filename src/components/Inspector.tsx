@@ -131,11 +131,12 @@ export function Inspector() {
 
             <div>
               <label className="text-[10px] text-neutral-400 block mb-1">ALBUM TITLE</label>
-              <input 
-                type="text" 
+              <textarea 
+                rows={2}
                 value={project.title}
                 onChange={e => dispatch({ type: 'UPDATE_PROJECT', payload: { title: e.target.value } })}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 resize-none"
+                placeholder="Enter for new line"
               />
             </div>
             <div>

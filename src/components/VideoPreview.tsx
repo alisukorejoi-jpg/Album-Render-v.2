@@ -2132,21 +2132,26 @@ export function VideoPreview() {
         
         const trackTitle = (activeTrack?.title || 'Unknown').toUpperCase(); // kept for bottom controls
         const albumTitle = (project.title || 'Unknown Album').toUpperCase();
-        const titleWords = albumTitle.split(' ');
-        let line1 = albumTitle;
-        let line2 = '';
-        if (titleWords.length > 1 && albumTitle.length > 10) {
-             const mid = Math.ceil(titleWords.length / 2);
-             line1 = titleWords.slice(0, mid).join(' ');
-             line2 = titleWords.slice(mid).join(' ');
+        let lines = [];
+        if (albumTitle.includes('\n')) {
+             lines = albumTitle.split('\n');
+        } else {
+             const titleWords = albumTitle.split(' ');
+             if (titleWords.length > 1 && albumTitle.length > 10) {
+                 const mid = Math.ceil(titleWords.length / 2);
+                 lines.push(titleWords.slice(0, mid).join(' '));
+                 lines.push(titleWords.slice(mid).join(' '));
+             } else {
+                 lines.push(albumTitle);
+             }
         }
         
-        if (line2) {
-             ctx.fillText(line1, leftX, leftY, maxTextW);
-             ctx.fillText(line2, leftX, leftY + 95 * scaleF, maxTextW);
-             leftY += 95 * scaleF;
-        } else {
-             ctx.fillText(line1, leftX, leftY, maxTextW);
+        lines.forEach((line, idx) => {
+             ctx.fillText(line, leftX, leftY + (idx * 95 * scaleF), maxTextW);
+        });
+        
+        if (lines.length > 1) {
+             leftY += (lines.length - 1) * 95 * scaleF;
         }
 
         // Zigzag line (fake waveform)
