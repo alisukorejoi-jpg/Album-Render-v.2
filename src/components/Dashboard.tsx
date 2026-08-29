@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../store';
 import { Plus, FolderOpen, Settings, LayoutTemplate, Film, MonitorPlay, LogOut, Loader2, Users, Trash2 } from 'lucide-react';
 import { Project, GlobalSettings } from '../types';

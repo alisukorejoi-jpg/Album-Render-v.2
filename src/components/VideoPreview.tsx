@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppContext } from '../store';
+import { Track } from '../types';
 import { getTrackTimings, getActiveTrack } from '../utils';
 
 export function VideoPreview() {

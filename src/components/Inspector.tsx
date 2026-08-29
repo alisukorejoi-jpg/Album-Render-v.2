@@ -1,4 +1,63 @@
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../store';
+
+
+function formatTime(seconds: number) {
+  if (!seconds || isNaN(seconds)) return '00:00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+function parseTime(timeStr: string) {
+  const parts = timeStr.split(':');
+  if (parts.length === 2) {
+    const m = parseInt(parts[0], 10);
+    const s = parseInt(parts[1], 10);
+    if (!isNaN(m) && !isNaN(s)) {
+      return m * 60 + s;
+    }
+  }
+  const sOnly = parseInt(timeStr, 10);
+  if (!isNaN(sOnly)) return sOnly;
+  return null;
+}
+
+function DurationInput({ track, onChange }: { track: any, onChange: (d: number) => void }) {
+  const [val, setVal] = useState(formatTime(track.duration));
+
+  useEffect(() => {
+    setVal(formatTime(track.duration));
+  }, [track.duration]);
+
+  const handleBlur = () => {
+    const parsed = parseTime(val);
+    if (parsed !== null && parsed > 0) {
+      onChange(parsed);
+      setVal(formatTime(parsed));
+    } else {
+      setVal(formatTime(track.duration));
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    }
+  };
+
+  return (
+    <input 
+      type="text"
+      value={val}
+      onChange={e => setVal(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      placeholder="mm:ss"
+      className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+    />
+  );
+}
 
 export function Inspector() {
   const { state, dispatch } = useAppContext();
@@ -232,6 +291,13 @@ export function Inspector() {
                     placeholder={`Default: ${project.artist}`}
                     onChange={e => dispatch({ type: 'UPDATE_TRACK', payload: { id: selectedTrack.id, track: { artist: e.target.value } } })}
                     className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 placeholder:text-neutral-600"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-neutral-400 block mb-1">CUSTOM DURATION (MM:SS)</label>
+                  <DurationInput 
+                     track={selectedTrack} 
+                     onChange={d => dispatch({ type: 'UPDATE_TRACK', payload: { id: selectedTrack.id, track: { duration: d } } })}
                   />
                 </div>
                 <div className="w-full h-px bg-neutral-800 my-2" />
