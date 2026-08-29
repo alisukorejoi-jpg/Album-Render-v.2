@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../store';
 
 
+
+
 function formatTime(seconds: number) {
   if (!seconds || isNaN(seconds)) return '00:00';
   const m = Math.floor(seconds / 60);
@@ -24,9 +26,9 @@ function parseTime(timeStr: string) {
 }
 
 function DurationInput({ track, onChange }: { track: any, onChange: (d: number) => void }) {
-  const [val, setVal] = useState(formatTime(track.duration));
+  const [val, setVal] = React.useState(formatTime(track.duration));
 
-  useEffect(() => {
+  React.useEffect(() => {
     setVal(formatTime(track.duration));
   }, [track.duration]);
 
@@ -300,6 +302,7 @@ export function Inspector() {
                      onChange={d => dispatch({ type: 'UPDATE_TRACK', payload: { id: selectedTrack.id, track: { duration: d } } })}
                   />
                 </div>
+
                 <div className="w-full h-px bg-neutral-800 my-2" />
                 <div>
                   <label className="text-[10px] text-neutral-400 block mb-2">CUSTOM COVER IMAGE</label>

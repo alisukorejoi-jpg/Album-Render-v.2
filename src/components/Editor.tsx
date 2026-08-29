@@ -10,9 +10,12 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../lib/firebase';
 import { saveProjectToFirestore } from '../lib/db';
 
+
+
 export function Editor() {
   const { state, dispatch } = useAppContext();
   const project = state.currentProject!;
+  const selectedTrack = state.currentProject?.tracks.find(t => t.id === state.selectedTrackId);
   const [activeTab, setActiveTab] = useState<'tracks' | 'settings'>('tracks');
   const [showExport, setShowExport] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -146,6 +149,11 @@ export function Editor() {
                    <p className="text-[10px] text-neutral-400 mb-3">Edit Album Title, Artist, and Cover in the Inspector on the right.</p>
                    <p className="text-[10px] text-cyan-500 font-bold mb-1">Crossfade (Global)</p>
                    <p className="text-[10px] text-neutral-400">Pengaturan Crossfade di panel Timeline View bawah berlaku secara global. Semua lagu di album akan otomatis menggunakan durasi transisi yang sama.</p>
+                </div>
+                
+                <div className="p-4 border border-neutral-800 rounded-lg bg-neutral-900/50">
+                   <p className="text-[10px] text-cyan-500 font-bold mb-1">Custom Duration</p>
+                   <p className="text-[10px] text-neutral-400">Jika ada MP3 yang terpotong karena metadata keliru, Anda bisa memperbaiki durasinya di panel <strong>Inspector</strong> (kanan) pada kolom <strong>Custom Duration</strong>. Pilih track terlebih dahulu untuk memunculkan pengaturannya.</p>
                 </div>
               </div>
             )}
