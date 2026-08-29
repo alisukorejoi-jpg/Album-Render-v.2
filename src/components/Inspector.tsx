@@ -85,6 +85,7 @@ export function Inspector() {
             }}
           >
             <option value="minimal">Minimal Cinematic</option>
+            <option value="neon_vinyl">Neon Vinyl</option>
             <option value="cover_flow_3d">3D Cover Flow</option>
             <option value="cover_flow_3d_light">3D Cover Flow (Light)</option>
             <option value="now_playing">Now Playing</option>

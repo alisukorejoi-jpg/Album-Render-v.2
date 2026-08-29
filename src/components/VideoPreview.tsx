@@ -208,7 +208,555 @@ export function VideoPreview() {
       }
       currentOffsetRef.current += (targetOffsetRef.current - currentOffsetRef.current) * 0.08;
       
-      if (template === 'minimal') {
+      if (template === 'neon_vinyl') {
+        const cw = targetWidth;
+        const ch = targetHeight;
+        const scaleF = targetWidth / 1920;
+
+        // Background: Deep dark navy/slate with smooth ambient gradient
+        const bgGrad = ctx.createRadialGradient(cw * 0.2, ch * 0.35, 50 * scaleF, cw * 0.5, ch * 0.5, cw * 0.8);
+        bgGrad.addColorStop(0, '#16122c');
+        bgGrad.addColorStop(0.4, '#0d0f1d');
+        bgGrad.addColorStop(1, '#070811');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, cw, ch);
+
+        // Soft ambient background glows
+        ctx.save();
+        const ambientPink = ctx.createRadialGradient(cw * 0.12, ch * 0.3, 10, cw * 0.12, ch * 0.3, 300 * scaleF);
+        ambientPink.addColorStop(0, 'rgba(255, 0, 128, 0.22)');
+        ambientPink.addColorStop(1, 'rgba(255, 0, 128, 0)');
+        ctx.fillStyle = ambientPink;
+        ctx.beginPath();
+        ctx.arc(cw * 0.12, ch * 0.3, 300 * scaleF, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // --- Top Right Dot Matrix Pattern ---
+        ctx.save();
+        const dotCols = 6;
+        const dotRows = 4;
+        const dotStartX = cw - 190 * scaleF;
+        const dotStartY = 110 * scaleF;
+        const dotGap = 16 * scaleF;
+        for (let r = 0; r < dotRows; r++) {
+            for (let c = 0; c < dotCols; c++) {
+                ctx.beginPath();
+                ctx.arc(dotStartX + c * dotGap, dotStartY + r * dotGap, 2.5 * scaleF, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(70, 130, 240, 0.45)';
+                ctx.fill();
+            }
+        }
+        ctx.restore();
+
+        // --- Left: Vinyl Record ---
+        const vinylCX = cw * 0.21;
+        const vinylCY = ch * 0.38;
+        const vinylR = 250 * scaleF;
+
+        ctx.save();
+        
+        // Outer Neon Arc Ring with Endpoint Dots
+        ctx.lineWidth = 3.5 * scaleF;
+        
+        // Magenta top-left arc
+        ctx.strokeStyle = '#f026a0';
+        ctx.shadowColor = '#f026a0';
+        ctx.shadowBlur = 14 * scaleF;
+        ctx.beginPath();
+        ctx.arc(vinylCX, vinylCY, vinylR + 32 * scaleF, -Math.PI * 0.95, Math.PI * 0.05);
+        ctx.stroke();
+
+        // Top dot
+        const topDotAngle = -Math.PI * 0.5;
+        const dotR = vinylR + 32 * scaleF;
+        ctx.beginPath();
+        ctx.arc(vinylCX + Math.cos(topDotAngle) * dotR, vinylCY + Math.sin(topDotAngle) * dotR, 5.5 * scaleF, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#f026a0';
+        ctx.shadowBlur = 10 * scaleF;
+        ctx.fill();
+
+        // Cyan bottom-right arc
+        ctx.strokeStyle = '#00e5ff';
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 14 * scaleF;
+        ctx.beginPath();
+        ctx.arc(vinylCX, vinylCY, vinylR + 32 * scaleF, Math.PI * 0.25, Math.PI * 0.85);
+        ctx.stroke();
+
+        // Bottom cyan dot
+        const btmDotAngle = Math.PI * 0.45;
+        ctx.beginPath();
+        ctx.arc(vinylCX + Math.cos(btmDotAngle) * dotR, vinylCY + Math.sin(btmDotAngle) * dotR, 5 * scaleF, 0, Math.PI * 2);
+        ctx.fillStyle = '#00e5ff';
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 10 * scaleF;
+        ctx.fill();
+
+        ctx.shadowBlur = 0; // reset shadow
+
+        // Rotate Vinyl
+        const rotation = (playTime * Math.PI * 2) / 10;
+        ctx.translate(vinylCX, vinylCY);
+        ctx.rotate(rotation);
+
+        // Vinyl Disc Body
+        ctx.beginPath();
+        ctx.arc(0, 0, vinylR, 0, Math.PI * 2);
+        ctx.fillStyle = '#0a0a0e';
+        ctx.fill();
+        ctx.strokeStyle = '#1a1c26';
+        ctx.lineWidth = 3 * scaleF;
+        ctx.stroke();
+
+        // Fine Vinyl Grooves
+        for (let i = 0; i < 7; i++) {
+            ctx.beginPath();
+            ctx.arc(0, 0, vinylR - (i * 16 * scaleF) - 10 * scaleF, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.lineWidth = 1.5 * scaleF;
+            ctx.stroke();
+        }
+
+        // Center Label (Cover Art)
+        const labelR = 145 * scaleF;
+        ctx.beginPath();
+        ctx.arc(0, 0, labelR, 0, Math.PI * 2);
+        ctx.clip();
+        
+        const coverImg = (activeTrack && activeTrack.id && trackImgCacheRef.current[activeTrack.id]) || bgImgRef.current;
+        if (coverImg) {
+            const imgRatio = coverImg.width / coverImg.height;
+            let sx = 0, sy = 0, sw = coverImg.width, sh = coverImg.height;
+            if (imgRatio > 1) {
+                sw = coverImg.height;
+                sx = (coverImg.width - sw) / 2;
+            } else {
+                sh = coverImg.width;
+                sy = (coverImg.height - sh) / 2;
+            }
+            ctx.drawImage(coverImg, sx, sy, sw, sh, -labelR, -labelR, labelR * 2, labelR * 2);
+        } else {
+            const defGrad = ctx.createLinearGradient(-labelR, -labelR, labelR, labelR);
+            defGrad.addColorStop(0, '#f026a0');
+            defGrad.addColorStop(1, '#6366f1');
+            ctx.fillStyle = defGrad;
+            ctx.fill();
+        }
+        
+        // Inner center spindle hole
+        ctx.beginPath();
+        ctx.arc(0, 0, 14 * scaleF, 0, Math.PI * 2);
+        ctx.fillStyle = '#08080c';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 2 * scaleF;
+        ctx.stroke();
+
+        ctx.restore();
+
+        // --- Left Middle: Play Controls ---
+        const ctrlY = ch * 0.72;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Shuffle Icon
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+        ctx.font = `${20 * scaleF}px Arial`;
+        ctx.fillText('🔀', vinylCX - 155 * scaleF, ctrlY);
+
+        // Previous Track
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `${24 * scaleF}px Arial`;
+        ctx.fillText('⏮', vinylCX - 85 * scaleF, ctrlY);
+
+        // Play/Pause Center Glowing Button
+        const playBtnR = 38 * scaleF;
+        
+        // Glow effect
+        ctx.beginPath();
+        ctx.arc(vinylCX, ctrlY, playBtnR, 0, Math.PI * 2);
+        ctx.fillStyle = '#0c0f18';
+        ctx.fill();
+
+        // Gradient neon ring
+        const ringGrad = ctx.createLinearGradient(vinylCX - playBtnR, ctrlY - playBtnR, vinylCX + playBtnR, ctrlY + playBtnR);
+        ringGrad.addColorStop(0, '#f026a0');
+        ringGrad.addColorStop(0.5, '#7c3aed');
+        ringGrad.addColorStop(1, '#00e5ff');
+        ctx.strokeStyle = ringGrad;
+        ctx.lineWidth = 3.5 * scaleF;
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 14 * scaleF;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Play / Pause Icon inside button
+        ctx.fillStyle = '#ffffff';
+        if (state.isPlaying) {
+            ctx.fillRect(vinylCX - 7 * scaleF, ctrlY - 11 * scaleF, 5 * scaleF, 22 * scaleF);
+            ctx.fillRect(vinylCX + 3 * scaleF, ctrlY - 11 * scaleF, 5 * scaleF, 22 * scaleF);
+        } else {
+            ctx.beginPath();
+            ctx.moveTo(vinylCX - 5 * scaleF, ctrlY - 11 * scaleF);
+            ctx.lineTo(vinylCX + 9 * scaleF, ctrlY);
+            ctx.lineTo(vinylCX - 5 * scaleF, ctrlY + 11 * scaleF);
+            ctx.fill();
+        }
+
+        // Next Track
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `${24 * scaleF}px Arial`;
+        ctx.fillText('⏭', vinylCX + 85 * scaleF, ctrlY);
+
+        // Repeat Icon
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+        ctx.font = `${20 * scaleF}px Arial`;
+        ctx.fillText('🔁', vinylCX + 155 * scaleF, ctrlY);
+        ctx.restore();
+
+        // --- Left Bottom: Equalizer / Soundwave Visualizer & Timestamps ---
+        const eqCenterY = ch * 0.88;
+        const eqW = 460 * scaleF;
+        const eqX = vinylCX - eqW / 2;
+        const numBars = 48;
+        const barGap = 4.5 * scaleF;
+        const barW = (eqW / numBars) - barGap;
+
+        ctx.save();
+        for (let i = 0; i < numBars; i++) {
+            const seed = i * 0.45 + playTime * 5.5;
+            // Waveform expanding up & down symmetrically
+            let waveVal = Math.abs(Math.sin(seed) * Math.cos(seed * 0.4)) * 32 * scaleF;
+            if (i % 2 === 0) waveVal *= 1.25;
+            if (i % 5 === 0) waveVal *= 1.4;
+            waveVal = Math.max(4 * scaleF, waveVal);
+
+            const barLeft = eqX + i * (barW + barGap);
+            const grad = ctx.createLinearGradient(0, eqCenterY - waveVal, 0, eqCenterY + waveVal);
+            grad.addColorStop(0, '#f026a0');
+            grad.addColorStop(0.5, '#9333ea');
+            grad.addColorStop(1, '#00e5ff');
+            ctx.fillStyle = grad;
+
+            // Draw symmetrical bar with rounded ends
+            ctx.beginPath();
+            ctx.roundRect(barLeft, eqCenterY - waveVal, barW, waveVal * 2, barW / 2);
+            ctx.fill();
+        }
+
+        // Timestamps below Soundwave
+        const trackElapsed = activeTrack ? Math.max(0, playTime - trackStartTime) : 0;
+        const totalDuration = activeTrack ? activeTrack.duration : 0;
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+        ctx.font = `500 ${17 * scaleF}px "${project.globalSettings.artistFont || "Plus Jakarta Sans"}"`;
+        ctx.textBaseline = 'top';
+        
+        ctx.textAlign = 'left';
+        ctx.fillText(formatTime(trackElapsed), eqX, eqCenterY + 42 * scaleF);
+        
+        ctx.textAlign = 'right';
+        ctx.fillText(formatTime(totalDuration), eqX + eqW, eqCenterY + 42 * scaleF);
+        ctx.restore();
+
+
+        // ==========================================
+        // --- Right Section: Header & Tracklist ---
+        // ==========================================
+        const rightPanelX = cw * 0.44;
+        
+        // Search Bar (Pill)
+        const searchW = 460 * scaleF;
+        const searchH = 48 * scaleF;
+        const searchY = 65 * scaleF;
+        
+        ctx.beginPath();
+        ctx.roundRect(rightPanelX, searchY, searchW, searchH, 24 * scaleF);
+        ctx.fillStyle = 'rgba(20, 24, 38, 0.85)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 1.5 * scaleF;
+        ctx.stroke();
+        
+        // Search placeholder text
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.font = `400 ${18 * scaleF}px "${project.globalSettings.artistFont || "Plus Jakarta Sans"}"`;
+        ctx.fillText('indonesia playlist', rightPanelX + 24 * scaleF, searchY + searchH / 2);
+        
+        ctx.textAlign = 'right';
+        ctx.fillText('🔍', rightPanelX + searchW - 20 * scaleF, searchY + searchH / 2);
+        
+        // Counter Badge (Pill)
+        const badgeW = 85 * scaleF;
+        const badgeX = rightPanelX + searchW + 25 * scaleF;
+        ctx.beginPath();
+        ctx.roundRect(badgeX, searchY, badgeW, searchH, 24 * scaleF);
+        const badgeGrad = ctx.createLinearGradient(badgeX, 0, badgeX + badgeW, 0);
+        badgeGrad.addColorStop(0, '#f026a0');
+        badgeGrad.addColorStop(1, '#4f46e5');
+        ctx.fillStyle = badgeGrad;
+        ctx.fill();
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `bold ${22 * scaleF}px "${project.globalSettings.titleFont || "Plus Jakarta Sans"}"`;
+        ctx.fillText(project.tracks.length.toString(), badgeX + badgeW / 2, searchY + searchH / 2);
+
+        // --- Main Title Header ---
+        const titleY = searchY + 135 * scaleF;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.font = `bold ${74 * scaleF}px "${project.globalSettings.titleFont || "Plus Jakarta Sans"}"`;
+        
+        const rawTitle = (project.title || 'TRENDING MUSIC').toUpperCase();
+        const words = rawTitle.split(' ');
+        let normalText = rawTitle;
+        let neonText = '';
+        
+        if (words.length > 1) {
+            neonText = words.pop();
+            normalText = words.join(' ') + ' ';
+        }
+        
+        // Word 1: TRENDING (White)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(normalText, rightPanelX, titleY);
+        
+        // Word 2: MUSIC (Neon Magenta to Blue Gradient)
+        if (neonText) {
+            const word1Width = ctx.measureText(normalText).width;
+            const musicX = rightPanelX + word1Width;
+            const textGrad = ctx.createLinearGradient(musicX, 0, musicX + ctx.measureText(neonText).width, 0);
+            textGrad.addColorStop(0, '#f026a0');
+            textGrad.addColorStop(1, '#38bdf8');
+            ctx.fillStyle = textGrad;
+            ctx.fillText(neonText, musicX, titleY);
+        }
+        
+        // --- Subtitle with Horizontal Flanking Lines ---
+        const subY = titleY + 48 * scaleF;
+        const subText = (project.artist || 'INDONESIA ALBUM TRACKS').toUpperCase();
+        ctx.font = `bold ${18 * scaleF}px "${project.globalSettings.artistFont || "Plus Jakarta Sans"}"`;
+        ctx.letterSpacing = '6px';
+        const subWidth = ctx.measureText(subText).width;
+        
+        // Left Wing Line
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.fillRect(rightPanelX, subY - 5 * scaleF, 120 * scaleF, 2 * scaleF);
+        
+        // Subtitle Text
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(subText, rightPanelX + 140 * scaleF, subY);
+        ctx.letterSpacing = '0px';
+
+        // Right Wing Line
+        const rightWingStart = rightPanelX + 140 * scaleF + subWidth + 15 * scaleF;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.fillRect(rightWingStart, subY - 5 * scaleF, Math.max(80 * scaleF, 780 * scaleF - (rightWingStart - rightPanelX)), 2 * scaleF);
+
+
+        // --- Tracklist Main Card ---
+        const listY = subY + 35 * scaleF;
+        const listW = 780 * scaleF;
+        const itemH = 92 * scaleF;
+        const containerH = 5 * itemH + 20 * scaleF;
+        
+        ctx.save();
+        // Glass card container
+        ctx.beginPath();
+        ctx.roundRect(rightPanelX, listY, listW, containerH, 26 * scaleF);
+        ctx.fillStyle = 'rgba(15, 17, 30, 0.75)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 1.5 * scaleF;
+        ctx.stroke();
+        ctx.clip();
+        
+        // Active scroll window (5 tracks at a time)
+        let startIdx = 0;
+        if (project.tracks.length > 5) {
+            startIdx = Math.max(0, activeTrackIndex - 2);
+            if (startIdx + 5 > project.tracks.length) {
+                startIdx = project.tracks.length - 5;
+            }
+        }
+        
+        const displayTracks = project.tracks.slice(startIdx, startIdx + 5);
+
+        if (displayTracks.length === 0) {
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = `500 ${22 * scaleF}px "${project.globalSettings.artistFont || "Plus Jakarta Sans"}"`;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.fillText('🎵 Belum ada lagu — Tambahkan lagu dari panel kiri', rightPanelX + listW / 2, listY + containerH / 2);
+        }
+        
+        displayTracks.forEach((track, i) => {
+            const actualTrackNum = startIdx + i + 1;
+            const isActive = track.id === activeTrack?.id;
+            const rowY = listY + 12 * scaleF + i * itemH;
+            const rowMidY = rowY + itemH / 2;
+            
+            if (isActive) {
+                // Active Track Highlight Pill
+                ctx.beginPath();
+                ctx.roundRect(rightPanelX + 10 * scaleF, rowY + 4 * scaleF, listW - 20 * scaleF, itemH - 8 * scaleF, 20 * scaleF);
+                const activeRowGrad = ctx.createLinearGradient(rightPanelX, 0, rightPanelX + listW, 0);
+                activeRowGrad.addColorStop(0, 'rgba(240, 38, 160, 0.22)');
+                activeRowGrad.addColorStop(0.6, 'rgba(124, 58, 237, 0.12)');
+                activeRowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = activeRowGrad;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(240, 38, 160, 0.4)';
+                ctx.lineWidth = 1 * scaleF;
+                ctx.stroke();
+
+                // Play Icon Button
+                const btnX = rightPanelX + 44 * scaleF;
+                ctx.beginPath();
+                ctx.arc(btnX, rowMidY, 20 * scaleF, 0, Math.PI * 2);
+                ctx.fillStyle = '#f026a0';
+                ctx.shadowColor = '#f026a0';
+                ctx.shadowBlur = 10 * scaleF;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `${15 * scaleF}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('▶', btnX + 1.5 * scaleF, rowMidY);
+            }
+            
+            // Track Number (Alternating Cyan #00e5ff & Magenta #f026a0)
+            const numColor = isActive ? '#f026a0' : (actualTrackNum % 2 === 0 ? '#00e5ff' : '#f026a0');
+            ctx.fillStyle = numColor;
+            ctx.font = `bold ${21 * scaleF}px "${project.globalSettings.artistFont || "Plus Jakarta Sans"}"`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            const numText = actualTrackNum.toString().padStart(2, '0') + '.';
+            const numX = isActive ? rightPanelX + 78 * scaleF : rightPanelX + 44 * scaleF;
+            ctx.fillText(numText, numX, rowMidY);
+            
+            // Track Title
+            ctx.fillStyle = isActive ? '#f026a0' : '#ffffff';
+            ctx.font = `bold ${21 * scaleF}px "${project.globalSettings.titleFont || "Plus Jakarta Sans"}"`;
+            
+            let trackTitle = (track.title || 'Untitled').toUpperCase();
+            if (ctx.measureText(trackTitle).width > 280 * scaleF) {
+                trackTitle = trackTitle.substring(0, 22) + '...';
+            }
+            const titleX = numX + 48 * scaleF;
+            ctx.fillText(trackTitle, titleX, rowMidY);
+            
+            // Artist Name in parentheses
+            const titleWidth = ctx.measureText(trackTitle + ' ').width;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.font = `400 ${18 * scaleF}px "${project.globalSettings.artistFont || "Plus Jakarta Sans"}"`;
+            let trackArtist = track.artist || project.artist || 'Unknown';
+            if (ctx.measureText(trackArtist).width > 180 * scaleF) {
+                trackArtist = trackArtist.substring(0, 14) + '...';
+            }
+            ctx.fillText(`(${trackArtist})`, titleX + titleWidth, rowMidY);
+            
+            // Duration & Vertical Dots Menu
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = `500 ${18 * scaleF}px "${project.globalSettings.artistFont || "Plus Jakarta Sans"}"`;
+            ctx.textAlign = 'right';
+            ctx.fillText(formatTime(track.duration), rightPanelX + listW - 65 * scaleF, rowMidY);
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.font = `bold ${22 * scaleF}px Arial`;
+            ctx.fillText('⋮', rightPanelX + listW - 25 * scaleF, rowMidY);
+            
+            // Thin Row Separator
+            if (i < displayTracks.length - 1 && !isActive) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+                ctx.fillRect(rightPanelX + 30 * scaleF, rowY + itemH, listW - 60 * scaleF, 1 * scaleF);
+            }
+        });
+        
+        ctx.restore();
+
+        // --- Far Right Quick Action Sidebar Icons ---
+        const iconColX = rightPanelX + listW + 65 * scaleF;
+        const iconStartY = listY + 30 * scaleF;
+        const actionIcons = ['❤️', '⬇', '🔗', '🎛️'];
+
+        actionIcons.forEach((icon, i) => {
+            const iy = iconStartY + i * 110 * scaleF;
+            const btnR = 30 * scaleF;
+            
+            // Round button background
+            ctx.beginPath();
+            ctx.arc(iconColX, iy, btnR, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(20, 24, 38, 0.9)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = 1.5 * scaleF;
+            ctx.stroke();
+            
+            // Icon glyph
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = `${20 * scaleF}px Arial`;
+            if (i === 0) ctx.fillStyle = '#f026a0'; // Pink heart
+            else if (i === 1) ctx.fillStyle = '#00e5ff'; // Cyan download
+            else if (i === 2) ctx.fillStyle = '#a855f7'; // Purple share
+            else ctx.fillStyle = '#38bdf8'; // Blue equalizer
+            ctx.fillText(icon, iconColX, iy);
+        });
+
+        // --- Bottom Right Decorative Waves & Triangles ---
+        ctx.save();
+        // Neon Waves
+        const waveStartX = rightPanelX + 180 * scaleF;
+        const waveY = ch - 50 * scaleF;
+        
+        for (let w = 0; w < 3; w++) {
+            ctx.beginPath();
+            ctx.strokeStyle = w === 0 ? 'rgba(0, 229, 255, 0.35)' : (w === 1 ? 'rgba(168, 85, 247, 0.35)' : 'rgba(240, 38, 160, 0.35)');
+            ctx.lineWidth = 2 * scaleF;
+            const offsetY = w * 8 * scaleF;
+            
+            ctx.moveTo(waveStartX, waveY + offsetY);
+            for (let x = 0; x <= 320 * scaleF; x += 10) {
+                const wy = Math.sin((x / (40 * scaleF)) + (playTime * 2) + w) * 10 * scaleF;
+                ctx.lineTo(waveStartX + x, waveY + offsetY + wy);
+            }
+            ctx.stroke();
+        }
+
+        // Geometric Triangles (Corner bottom right)
+        const triX = cw - 120 * scaleF;
+        const triY = ch - 65 * scaleF;
+        
+        // Triangle 1
+        ctx.beginPath();
+        ctx.moveTo(triX, triY);
+        ctx.lineTo(triX + 18 * scaleF, triY - 24 * scaleF);
+        ctx.lineTo(triX + 36 * scaleF, triY);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(240, 38, 160, 0.7)';
+        ctx.fill();
+
+        // Triangle 2
+        ctx.beginPath();
+        ctx.moveTo(triX + 22 * scaleF, triY + 12 * scaleF);
+        ctx.lineTo(triX + 36 * scaleF, triY - 6 * scaleF);
+        ctx.lineTo(triX + 50 * scaleF, triY + 12 * scaleF);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(240, 38, 160, 0.9)';
+        ctx.fill();
+        ctx.restore();
+
+      } else if (template === 'minimal') {
         // Minimal Cinematic
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
