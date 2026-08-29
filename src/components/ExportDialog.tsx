@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../store';
+import { getTrackTimings } from '../utils';
 import { X, Video } from 'lucide-react';
 
 export function ExportDialog({ onClose }: { onClose: () => void }) {
@@ -10,7 +11,7 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
   const [status, setStatus] = useState('Ready to render');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
-  const totalDuration = project.tracks.reduce((sum, t) => sum + t.duration, 0);
+  const { totalDuration } = getTrackTimings(project);
   const progress = totalDuration > 0 ? Math.min(100, Math.floor((state.currentTime / totalDuration) * 100)) : 0;
 
   // Auto-stop when finished
