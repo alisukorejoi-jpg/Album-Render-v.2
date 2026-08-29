@@ -88,6 +88,11 @@ export function Timeline() {
         audio.src = track.audioUrl;
       }
 
+      // Dynamic duration correction for VBR / incomplete metadata
+      if (audio.duration && isFinite(audio.duration) && Math.abs(audio.duration - track.duration) > 1) {
+          dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, track: { duration: audio.duration } }});
+      }
+
       // Sync time if drifting or forced
       const drift = Math.abs(audio.currentTime - localTime);
       if (forceSeek || drift > 0.3) {
