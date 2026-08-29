@@ -36,6 +36,7 @@ export function Inspector() {
             <option value="topographic_player">Topographic Player</option>
             <option value="cover_flow_player">Cover Flow Player</option>
             <option value="retro_vinyl">Retro Vinyl</option>
+            <option value="retro_y2k">Retro Y2K Fan Edit</option>
           </select>
         </div>
 

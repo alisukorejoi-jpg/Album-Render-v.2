@@ -2350,6 +2350,326 @@ export function VideoPreview() {
              ctx.fillText(formatTime(t.duration), listX + listW - 30 * scaleF, iy + itemH/2);
         });
 
+            } else if (template === 'retro_y2k') {
+        const cw = targetWidth;
+        const ch = targetHeight;
+        const scaleF = targetWidth / 1920;
+        
+        // Background
+        ctx.fillStyle = '#f4f4f4';
+        ctx.fillRect(0, 0, cw, ch);
+
+        // Decor Stars (Sparkles)
+        const drawSparkle = (x, y, s) => {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.beginPath();
+            ctx.moveTo(0, -s);
+            ctx.lineTo(s*0.2, -s*0.2);
+            ctx.lineTo(s, 0);
+            ctx.lineTo(s*0.2, s*0.2);
+            ctx.lineTo(0, s);
+            ctx.lineTo(-s*0.2, s*0.2);
+            ctx.lineTo(-s, 0);
+            ctx.lineTo(-s*0.2, -s*0.2);
+            ctx.closePath();
+            ctx.fillStyle = '#111';
+            ctx.fill();
+            ctx.restore();
+        };
+
+        const drawAsterisk = (x, y, s) => {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.strokeStyle = '#111';
+            ctx.lineWidth = 3 * scaleF;
+            ctx.lineCap = 'round';
+            for (let i=0; i<4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, -s);
+                ctx.lineTo(0, s);
+                ctx.stroke();
+                ctx.rotate(Math.PI / 4);
+            }
+            ctx.restore();
+        };
+
+        drawAsterisk(380 * scaleF, 150 * scaleF, 45 * scaleF);
+        drawSparkle(650 * scaleF, 850 * scaleF, 25 * scaleF);
+        drawSparkle(780 * scaleF, 1000 * scaleF, 40 * scaleF);
+        drawAsterisk(200 * scaleF, 850 * scaleF, 15 * scaleF);
+        drawAsterisk(1700 * scaleF, 450 * scaleF, 35 * scaleF);
+        drawAsterisk(1750 * scaleF, 980 * scaleF, 35 * scaleF);
+        
+        ctx.fillStyle = '#111';
+        ctx.font = `400 ${30 * scaleF}px "Inter", sans-serif`;
+        ctx.fillText('+', 250 * scaleF, 80 * scaleF);
+        ctx.fillText('+', 1380 * scaleF, 680 * scaleF);
+        ctx.fillText('+', 600 * scaleF, 850 * scaleF);
+
+        // Header / Search Bar pill
+        const pillX = 550 * scaleF;
+        const pillY = 60 * scaleF;
+        const pillW = 600 * scaleF;
+        const pillH = 70 * scaleF;
+        
+        ctx.beginPath();
+        ctx.roundRect(pillX, pillY, pillW, pillH, pillH/2);
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 2 * scaleF;
+        ctx.stroke();
+        
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#111';
+        ctx.font = `500 ${24 * scaleF}px "Inter", sans-serif`;
+        const headerText = project.artist ? project.artist.toLowerCase() + ' playlist' : 'comeback playlist';
+        ctx.fillText(headerText, pillX + pillW/2, pillY + pillH/2);
+        
+        // Search Icon (magnifying glass) right side
+        ctx.beginPath();
+        ctx.arc(pillX + pillW - 40 * scaleF, pillY + pillH/2 - 5 * scaleF, 8 * scaleF, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pillX + pillW - 35 * scaleF, pillY + pillH/2 + 0 * scaleF);
+        ctx.lineTo(pillX + pillW - 25 * scaleF, pillY + pillH/2 + 10 * scaleF);
+        ctx.stroke();
+
+        // Some header buttons
+        ctx.beginPath();
+        ctx.roundRect(pillX + pillW + 30 * scaleF, pillY, 100 * scaleF, pillH, pillH/2);
+        ctx.fillStyle = '#111';
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = `700 ${24 * scaleF}px "Inter", sans-serif`;
+        ctx.fillText(project.tracks.length.toString(), pillX + pillW + 80 * scaleF, pillY + pillH/2);
+
+        // Big Main Title (Album Title)
+        const mainTitle = (project.title || 'STREAMING PARTY').toUpperCase();
+        let lines = mainTitle.includes('\n') ? mainTitle.split('\n') : [mainTitle];
+        
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.font = `900 ${100 * scaleF}px "Montserrat", sans-serif`;
+        
+        let titleStartY = 200 * scaleF;
+        let titleX = 650 * scaleF;
+        
+        if (lines.length > 2) lines = lines.slice(0, 2); 
+        
+        lines.forEach((line, idx) => {
+            ctx.fillStyle = idx === 0 && lines.length > 1 ? '#cc0000' : '#111';
+            const tw = ctx.measureText(line).width;
+            let currentFont = ctx.font;
+            if (tw > 1100 * scaleF) {
+                const ratio = (1100 * scaleF) / tw;
+                ctx.font = `900 ${100 * scaleF * ratio}px "Montserrat", sans-serif`;
+            }
+            ctx.fillText(line, titleX, titleStartY + idx * 90 * scaleF);
+            ctx.font = currentFont; 
+        });
+        
+        const bannerY = titleStartY + (lines.length) * 95 * scaleF + 20 * scaleF;
+        const bannerW = 900 * scaleF;
+        const bannerH = 45 * scaleF;
+        ctx.fillStyle = '#cc0000';
+        ctx.fillRect(titleX, bannerY, bannerW, bannerH);
+        
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#fff';
+        ctx.font = `800 ${24 * scaleF}px "Inter", sans-serif`;
+        const bannerText = (project.artist || 'HAPPY BURSTDAY').toUpperCase() + ' ALBUM TRACKS';
+        ctx.fillText(bannerText, titleX + bannerW/2, bannerY + bannerH/2 + 2*scaleF);
+
+        // Vinyl (Left side)
+        const vX = 50 * scaleF;
+        const vY = 600 * scaleF;
+        const vR = 600 * scaleF;
+
+        ctx.beginPath();
+        ctx.arc(vX, vY, vR + 50 * scaleF, -Math.PI/4, Math.PI/3);
+        ctx.strokeStyle = '#cc0000';
+        ctx.lineWidth = 15 * scaleF;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        
+        const dotAng = Math.PI/3;
+        const dotX = vX + Math.cos(dotAng) * (vR + 50 * scaleF);
+        const dotY = vY + Math.sin(dotAng) * (vR + 50 * scaleF);
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, 20 * scaleF, 0, Math.PI*2);
+        ctx.fillStyle = '#cc0000';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(vX, vY, vR + 90 * scaleF, -Math.PI/6, Math.PI/2.5);
+        ctx.strokeStyle = '#ddd';
+        ctx.lineWidth = 10 * scaleF;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(vX, vY);
+        if (state.isPlaying) {
+             vinylRotationRef.current += 0.005;
+        }
+        ctx.rotate(vinylRotationRef.current);
+
+        ctx.beginPath();
+        ctx.arc(0, 0, vR, 0, Math.PI * 2);
+        ctx.fillStyle = '#111';
+        ctx.fill();
+
+        ctx.lineWidth = 2 * scaleF;
+        ctx.strokeStyle = '#222';
+        for (let i = 1; i <= 20; i++) {
+            ctx.beginPath();
+            ctx.arc(0, 0, vR - i * 20 * scaleF, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.arc(0, 0, vR * 0.35, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+
+        const coverImg = (activeTrack && activeTrack.id && trackImgCacheRef.current[activeTrack.id]) || bgImgRef.current;
+        
+        if (coverImg) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(0, 0, vR * 0.35, 0, Math.PI * 2);
+            ctx.clip();
+            const imgRatio = coverImg.width / coverImg.height;
+            const targetSize = vR * 0.7;
+            let drawW = targetSize;
+            let drawH = targetSize;
+            if (imgRatio > 1) {
+                drawW = targetSize * imgRatio;
+            } else {
+                drawH = targetSize / imgRatio;
+            }
+            ctx.drawImage(coverImg, -drawW/2, -drawH/2, drawW, drawH);
+            ctx.restore();
+        }
+
+        ctx.beginPath();
+        ctx.arc(0, 0, vR * 0.33, 0, Math.PI * 2);
+        ctx.strokeStyle = '#eee';
+        ctx.lineWidth = 2 * scaleF;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, vR * 0.05, 0, Math.PI * 2);
+        ctx.fillStyle = '#111';
+        ctx.fill();
+        ctx.restore();
+
+        // Tracklist
+        const listX = 750 * scaleF;
+        let listY = bannerY + bannerH + 60 * scaleF;
+        const itemH = 50 * scaleF;
+        const visibleTracks = Math.min(project.tracks.length, 12); 
+        
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        
+        for (let i = 0; i < visibleTracks; i++) {
+            const track = project.tracks[i];
+            const isTrackActive = (i === activeTrackIndex);
+            
+            const num = (i + 1).toString().padStart(2, '0') + '.';
+            ctx.font = `600 ${22 * scaleF}px "Inter", sans-serif`;
+            ctx.fillStyle = isTrackActive ? '#cc0000' : '#111';
+            ctx.fillText(num, listX, listY);
+            
+            const numW = ctx.measureText(num + ' ').width;
+            
+            ctx.font = `800 ${24 * scaleF}px "Inter", sans-serif`;
+            ctx.fillText(track.title || 'Unknown Track', listX + numW, listY);
+            
+            const titleW = ctx.measureText((track.title || 'Unknown Track') + ' ').width;
+            
+            ctx.font = `500 ${20 * scaleF}px "Inter", sans-serif`;
+            ctx.fillStyle = isTrackActive ? '#cc0000' : '#555';
+            ctx.fillText(`(${track.artist || 'Unknown'})`, listX + numW + titleW, listY);
+            
+            listY += itemH;
+        }
+
+        const drawFloatBtn = (cx, cy, iconType) => {
+            ctx.beginPath();
+            ctx.arc(cx, cy, 45 * scaleF, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.strokeStyle = '#111';
+            ctx.lineWidth = 1 * scaleF;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(cx + 4*scaleF, cy + 4*scaleF, 45 * scaleF, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fill();
+            
+            ctx.fillStyle = '#cc0000';
+            ctx.strokeStyle = '#cc0000';
+            if (iconType === 'play') {
+                ctx.beginPath();
+                ctx.moveTo(cx - 10*scaleF, cy - 15*scaleF);
+                ctx.lineTo(cx + 15*scaleF, cy);
+                ctx.lineTo(cx - 10*scaleF, cy + 15*scaleF);
+                ctx.fill();
+            } else if (iconType === 'pause') {
+                ctx.fillRect(cx - 12*scaleF, cy - 15*scaleF, 8*scaleF, 30*scaleF);
+                ctx.fillRect(cx + 4*scaleF, cy - 15*scaleF, 8*scaleF, 30*scaleF);
+            } else if (iconType === 'heart') {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.scale(0.8, 0.8);
+                ctx.beginPath();
+                ctx.moveTo(0, 5*scaleF);
+                ctx.bezierCurveTo(0, -15*scaleF, -25*scaleF, -15*scaleF, -25*scaleF, 5*scaleF);
+                ctx.bezierCurveTo(-25*scaleF, 25*scaleF, 0, 35*scaleF, 0, 35*scaleF);
+                ctx.bezierCurveTo(0, 35*scaleF, 25*scaleF, 25*scaleF, 25*scaleF, 5*scaleF);
+                ctx.bezierCurveTo(25*scaleF, -15*scaleF, 0, -15*scaleF, 0, 5*scaleF);
+                ctx.fill();
+                ctx.restore();
+            } else if (iconType === 'download') {
+                ctx.beginPath();
+                ctx.moveTo(cx - 15*scaleF, cy);
+                ctx.lineTo(cx, cy + 15*scaleF);
+                ctx.lineTo(cx + 15*scaleF, cy);
+                ctx.lineWidth = 4*scaleF;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(cx, cy - 15*scaleF);
+                ctx.lineTo(cx, cy + 13*scaleF);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(cx - 15*scaleF, cy + 20*scaleF);
+                ctx.lineTo(cx + 15*scaleF, cy + 20*scaleF);
+                ctx.stroke();
+            } else if (iconType === 'refresh') {
+                ctx.beginPath();
+                ctx.arc(cx, cy, 15*scaleF, Math.PI*0.2, Math.PI*1.8);
+                ctx.lineWidth = 4*scaleF;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(cx + 15*scaleF, cy - 8*scaleF);
+                ctx.lineTo(cx + 15*scaleF, cy + 2*scaleF);
+                ctx.lineTo(cx + 25*scaleF, cy + 2*scaleF);
+                ctx.stroke();
+            }
+        };
+
+        drawFloatBtn(350 * scaleF, 900 * scaleF, state.isPlaying ? 'pause' : 'play');
+        drawFloatBtn(450 * scaleF, 830 * scaleF, 'play');
+        
+        const rfX = 1750 * scaleF;
+        drawFloatBtn(rfX, 600 * scaleF, 'heart');
+        drawFloatBtn(rfX, 720 * scaleF, 'download');
+        drawFloatBtn(rfX, 840 * scaleF, 'refresh');
+
       } else if (template === 'cover_flow_3d_light') {
         const cw = targetWidth;
         const ch = targetHeight;
